@@ -11,13 +11,12 @@ public class PravoSearchParser {
     static List<DocumentItem> parse(Document doc) {
         // Находим все документы в выдаче
         Elements resultItems = doc.select("div.documents-table-row");
+        List<DocumentItem> documentItems = new ArrayList<>();
 
         // Если ничего не найдено — дальше идти смысла нет
         if (resultItems.isEmpty()) {
-            throw new IllegalArgumentException("No documents rows found");
+            return documentItems;
         }
-
-        List<DocumentItem> documentItems = new ArrayList<>();
 
         for (int i = 0; i < resultItems.size(); i++) {
             Element item = resultItems.get(i);
