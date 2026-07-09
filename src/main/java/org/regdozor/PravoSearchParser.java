@@ -1,4 +1,4 @@
-package org.bizassistant;
+package org.regdozor;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -7,7 +7,20 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * "Разборщик": превращает HTML-страницу поисковой выдачи pravo.gov.ru
+ * в список структурированных объектов DocumentItem.
+ * Использует библиотеку Jsoup и CSS-селекторы (как в вёрстке) для поиска нужных кусков.
+ * Методы статические — состояния у парсера нет, он просто "функция": HTML на входе, список на выходе.
+ */
 public class PravoSearchParser {
+    /**
+     * Находит в документе все строки выдачи и парсит каждую.
+     * Строки, которые не удалось распарсить, пропускаются (не роняют весь разбор).
+     *
+     * @param doc распарсенный Jsoup-документ одной страницы выдачи
+     * @return список успешно разобранных документов (может быть пустым)
+     */
     static List<DocumentItem> parse(Document doc) {
         // Находим все документы в выдаче
         Elements resultItems = doc.select("div.documents-table-row");
@@ -38,6 +51,14 @@ public class PravoSearchParser {
         return documentItems;
     }
 
+    /**
+     * Разбирает ОДНУ строку выдачи в DocumentItem.
+     * Вытаскивает: ссылку и заголовок, eoNumber (из хвоста href), ссылку на PDF, дату опубликования.
+     *
+     * @param item элемент div.documents-table-row — одна строка выдачи
+     * @return заполненный DocumentItem
+     * @throws IllegalArgumentException если какого-то обязательного куска на странице не оказалось
+     */
     static DocumentItem parseOneItem(Element item) {
         Element link;
         String href;

@@ -1,4 +1,4 @@
-package org.bizassistant;
+package org.regdozor;
 
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +10,13 @@ import java.io.IOException;
 
 import static java.lang.Math.min;
 
+/**
+ * "Качалка": единственная задача — скачать HTML-страницу по URL и вернуть её как строку.
+ * Инкапсулирует всю возню с HTTP: таймауты, редиректы, заголовки, коды ответа.
+ * Остальной код (парсер, runner) про HTTP ничего не знает — он просто получает готовый текст.
+ */
 public class HttpTextFetcher {
+    /** Переиспользуемый HTTP-клиент. Создаётся один раз в конструкторе. */
     private final HttpClient client;
 
     public HttpTextFetcher() {
@@ -21,7 +27,17 @@ public class HttpTextFetcher {
                 build();
     }
 
+    /**
+     * Скачивает страницу по адресу url.
+     *
+     * @param url адрес страницы (может содержать кириллицу — она будет закодирована в ASCII)
+     * @return тело ответа (HTML) как строка в кодировке UTF-8
+     * @throws IllegalStateException если сервер ответил кодом, отличным от 200
+     * @throws RuntimeException      при сетевой ошибке или прерывании потока
+     */
     public String fetch (String url) {
+        // URL с кириллицей (напр. Name=маркировки) нельзя слать как есть —
+        // переводим его в чистый ASCII-вид (проценты-кодирование).
         URI rawUri = URI.create(url);
         URI asciiUri = URI.create(rawUri.toASCIIString());
 

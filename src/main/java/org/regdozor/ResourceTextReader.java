@@ -1,18 +1,19 @@
-package org.bizassistant;
+package org.regdozor;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Читает текстовый файл, лежащий В САМОМ приложении (в src/main/resources), а не из сети.
+ * Имя файла передаётся параметром: read("products.json"), read("obligations.json") и т.п.
+ * Возвращает содержимое файла как строку UTF-8.
+ */
 public class ResourceTextReader {
 
     // Сейчас метод статический, чтобы проще вызывать на старте.
     // Позже, когда появятся настройки/несколько источников, возможно сделаем экземплярный класс.
-    public static String read() {
-        // Имя ресурса в classpath.
-        // Файл должен лежать в src/main/resources/pravo_markirovka.html
-        String resourceName = "pravo_markirovka.html";
-
+    public static String read(String resourceName) {
         // Берём classloader, который знает про ресурсы приложения (resources/jar).
         // Это надёжнее, чем читать по абсолютному пути типа C:\..., потому что на сервере
         // путей проекта уже не будет.
