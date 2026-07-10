@@ -33,8 +33,11 @@ public class TelegramNotifier {
     }
 
     public void send(String text) {
+        String linkPreview = URLEncoder.encode("{\"is_disabled\":true}", StandardCharsets.UTF_8);
+
         String url = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatId + "&text=" +
-                URLEncoder.encode(text, StandardCharsets.UTF_8);
+                URLEncoder.encode(text, StandardCharsets.UTF_8) + "&parse_mode=HTML" + "&link_preview_options=" +
+                linkPreview;
 
         HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(url)).GET().timeout(Duration.ofSeconds(20)).build();
 

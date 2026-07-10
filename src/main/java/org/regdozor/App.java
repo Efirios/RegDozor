@@ -70,6 +70,7 @@ public class App {
         MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, telegramNotifier);
 
         baselineReporter.run();
-        runner.run();
+        // мониторинг pravo.gov.ru временно отключён, чтобы не шуметь при отладке baseline. Вернуть, когда нужно.
+//        runner.run();
     }
 }
