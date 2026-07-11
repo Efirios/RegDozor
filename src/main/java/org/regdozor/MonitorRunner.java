@@ -17,7 +17,7 @@ public class MonitorRunner {
     /** Помощник "скачать HTML". */
     private final HttpTextFetcher fetcher;
     /** Помощник "память": что мы уже видели в прошлых запусках. */
-    private final SeenEoNumberStore seenStore;
+    private final SeenStore seenStore;
     /** Помощник "оповещатель": шлёт сообщения в Telegram. */
     private final TelegramNotifier telegramNotifier;
 
@@ -25,7 +25,7 @@ public class MonitorRunner {
      * Все зависимости приходят снаружи (dependency injection) и проверяются на null.
      * Так MonitorRunner не привязан к конкретным реализациям и его легко тестировать.
      */
-    public MonitorRunner(List<Subscription> subscriptions, HttpTextFetcher fetcher, SeenEoNumberStore seenStore,
+    public MonitorRunner(List<Subscription> subscriptions, HttpTextFetcher fetcher, SeenStore seenStore,
                          TelegramNotifier telegramNotifier) {
         if (subscriptions == null || subscriptions.isEmpty()){
             throw new IllegalArgumentException("subscriptions не может быть null или пустым!");

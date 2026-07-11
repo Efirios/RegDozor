@@ -22,15 +22,15 @@ public class AlertFormatter {
             sb.append("\n• ").append(o.what()).append(" — с <u><b>").append(o.since()).append("</b></u>").append("\n");
 
             if (r != null) {
-                sb.append("\uD83D\uDCB8 Риск: ").append(r.article()).append(" — <u><b>").append(r.fine()).append("</b></u> + ").
-                        append(r.consequence()).append(".").append("\n");
+                sb.append("\uD83D\uDCB8 Риск: ").append(r.article()).append(" — <u><b>").append(r.fine()).append(" + ").
+                        append(r.consequence()).append(".").append("</b></u>\n");
                 sb.append("Норматив: <a href=\"").append(r.sourceUrl()).append("\">").append(r.article()).append("</a>\n");
                 sb.append("Норматив проверен: ").append(r.verifiedOn()).append("\n");
             } else {
                 sb.append("❔ Риск: не проверен").append("\n");
             }
 
-            sb.append("Основание: <a href=\"").append(o.sourceUrl()).append("\">").append(o.source()).append("</a>\n");
+            sb.append("Основание: <a href=\"").append(o.sourceUrl()).append("\">").append(o.source()).append("</a>\n\n");
         }
 
         sb.append("Коды и сроки проверены: ").append(p.verifiedOn()).append("\n");

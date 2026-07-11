@@ -60,16 +60,28 @@ public class App {
 
         // Создаём помощников СНАРУЖИ и передаём внутрь runner (dependency injection).
         HttpTextFetcher httpTextFetcher = new HttpTextFetcher();   // "качалка" HTML
-        SeenEoNumberStore seenStore = new SeenEoNumberStore();     // "память" о виденном
+        SeenStore seenStore = new SeenStore("seen-eonumbers.txt");     // "память" о виденном
         TelegramNotifier telegramNotifier = new TelegramNotifier(token, chatId);
         ProductLoader productLoader = new ProductLoader();
         AlertFormatter alertFormatter = new AlertFormatter();
         BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, telegramNotifier);
 
+        CodeMatcher matcher = new CodeMatcher();
+        ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher);
+        RelevanceChecker relevanceChecker = new RelevanceChecker(matcher);
+        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceChecker,
+                alertFormatter, telegramNotifier);
+        CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
+                new SeenStore("seen-releases.txt"), dozorReporter);
+
         // Дирижёр получает подписки и всех помощников — и запускает процесс.
         MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, telegramNotifier);
 
-        baselineReporter.run();
+        crptFeedMonitor.run();
+
+
+
+//        baselineReporter.run();
         // мониторинг pravo.gov.ru временно отключён, чтобы не шуметь при отладке baseline. Вернуть, когда нужно.
 //        runner.run();
     }
