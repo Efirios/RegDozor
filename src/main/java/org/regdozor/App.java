@@ -1,6 +1,9 @@
 package org.regdozor;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Точка входа в приложение (класс с методом main).
@@ -73,13 +76,21 @@ public class App {
                 alertFormatter, telegramNotifier);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         // Дирижёр получает подписки и всех помощников — и запускает процесс.
         MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, telegramNotifier);
 
-        crptFeedMonitor.run();
-
-
+        scheduler.scheduleWithFixedDelay (
+                () -> {
+                    try {
+                        System.out.println("Тик дозора: " + java.time.LocalTime.now());
+                        crptFeedMonitor.run();
+                    } catch (Exception e) {
+                        System.out.println("Дозор упал: " + e.getMessage());
+                    }
+                },
+                0, 24, TimeUnit.HOURS);
 
 //        baselineReporter.run();
         // мониторинг pravo.gov.ru временно отключён, чтобы не шуметь при отладке baseline. Вернуть, когда нужно.

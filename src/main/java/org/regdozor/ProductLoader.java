@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ProductLoader {
     ObjectMapper mapper = new ObjectMapper();
+
     public Product[] load() {
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         String json = ResourceTextReader.read("products.json");
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
 
         try {
             Product[] products = mapper.readValue(json, Product[].class);

@@ -5,9 +5,11 @@ import org.jsoup.nodes.Document;
 
 /**
  * Второй кирпич "дозора": по URL отдаёт ЧИСТЫЙ текст статьи.
- * Качает (fetcher) -> парсит jsoup -> ВЫРЕЗАЕТ комментарии ([class*=comment], иначе вопросы юзеров
- * дают ложные совпадения кодов) -> возвращает видимый текст.
- * ВНИМАНИЕ: селектор "[class*=comment]" — специфика markirovka.ru; для другого источника чистка будет иной.
+ * ВНИМАНИЕ (временное состояние): извлечение СЕЙЧАС заточено под честныйзнак.рф (берёт .text-par-lh-big —
+ * только тело статьи, иначе меню/хештеги дают ложные совпадения). Строка про markirovka
+ * ([class*=comment].remove()) ЗАКОММЕНТИРОВАНА → для markirovka класс сейчас НЕ работает.
+ * TODO: развязать через интерфейс ArticleExtractor (реализация на каждый сайт: markirovka убирает
+ * комментарии, честныйзнак берёт .text-par-lh-big). Извлечение текста сайт-специфично.
  */
 public class ArticleTextFetcher {
     private final HttpTextFetcher fetcher;
@@ -22,7 +24,8 @@ public class ArticleTextFetcher {
     public String fetchCleanText(String url) {
         String html = fetcher.fetch(url);
         Document doc = Jsoup.parse(html);
-        doc.select("[class*=comment]").remove();
-        return doc.text();
+//        doc.select("[class*=comment]").remove();
+//        return doc.text();
+        return doc.select(".text-par-lh-big").text();
     }
 }
