@@ -1,8 +1,18 @@
 package org.regdozor;
 
+/**
+ * Координатор ветки «baseline» («что действует у тебя СЕГОДНЯ»): в отличие от «дозора»
+ * (реакция на новый документ) — берёт весь каталог и шлёт по карточке на каждый товар.
+ * Нужен для «холодного старта»: пользователь сразу видит свои действующие обязанности.
+ * Тонкий класс-дирижёр: сам ничего не считает, только связывает трёх помощников
+ * (загрузка -> форматирование -> отправка).
+ */
 public class BaselineReporter {
+    /** «Загрузчик» каталога товаров из products.json. */
     private final ProductLoader loader;
+    /** «Форматировщик» одной товарной карточки в текст с HTML-разметкой Telegram. */
     private final AlertFormatter formatter;
+    /** «Оповещатель» в Telegram. */
     private final TelegramNotifier notifier;
 
     public BaselineReporter(ProductLoader loader, AlertFormatter formatter, TelegramNotifier notifier) {
@@ -22,6 +32,7 @@ public class BaselineReporter {
         this.notifier = notifier;
     }
 
+    /** Загружает каталог и отправляет по одному сообщению-карточке на каждый товар. */
     public void run() {
         Product[] products = loader.load();
         for (Product p : products) {

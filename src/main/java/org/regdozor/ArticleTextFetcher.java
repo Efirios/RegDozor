@@ -5,27 +5,30 @@ import org.jsoup.nodes.Document;
 
 /**
  * Второй кирпич "дозора": по URL отдаёт ЧИСТЫЙ текст статьи.
- * ВНИМАНИЕ (временное состояние): извлечение СЕЙЧАС заточено под честныйзнак.рф (берёт .text-par-lh-big —
- * только тело статьи, иначе меню/хештеги дают ложные совпадения). Строка про markirovka
- * ([class*=comment].remove()) ЗАКОММЕНТИРОВАНА → для markirovka класс сейчас НЕ работает.
- * TODO: развязать через интерфейс ArticleExtractor (реализация на каждый сайт: markirovka убирает
- * комментарии, честныйзнак берёт .text-par-lh-big). Извлечение текста сайт-специфично.
+ * Делает то, что одинаково для любого сайта: качает HTML (HttpTextFetcher) и парсит его в Document (jsoup).
+ * САЙТ-СПЕЦИФИЧНОЕ извлечение текста делегирует внедрённому ArticleExtractor — конкретную реализацию
+ * (CrptReleaseExtractor: .text-par-lh-big; MarkirovkaReleaseExtractor: убрать [class*=comment], взять весь текст)
+ * выбирают снаружи, при сборке в App. Так этот класс не знает, честныйзнак это или markirovka.
  */
 public class ArticleTextFetcher {
     private final HttpTextFetcher fetcher;
+    private final ArticleExtractor extractor;
 
-    public ArticleTextFetcher(HttpTextFetcher fetcher) {
+    public ArticleTextFetcher(HttpTextFetcher fetcher, ArticleExtractor extractor) {
         if (fetcher == null) {
             throw new IllegalArgumentException("fetcher не может быть null!");
         }
         this.fetcher = fetcher;
+
+        if (extractor == null) {
+            throw new IllegalArgumentException("extractor не может быть null!");
+        }
+        this.extractor = extractor;
     }
 
     public String fetchCleanText(String url) {
         String html = fetcher.fetch(url);
         Document doc = Jsoup.parse(html);
-//        doc.select("[class*=comment]").remove();
-//        return doc.text();
-        return doc.select(".text-par-lh-big").text();
+        return extractor.extractText(doc);
     }
 }

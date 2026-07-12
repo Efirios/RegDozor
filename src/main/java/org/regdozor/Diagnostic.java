@@ -65,7 +65,7 @@ public class Diagnostic {
         String url4 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-22-06-2026-po-26-06-2026/";
 
         List<String> urls = List.of(url1, url2, url3, url4);
-        ArticleTextFetcher fetcher = new ArticleTextFetcher(new HttpTextFetcher());
+        ArticleTextFetcher fetcher = new ArticleTextFetcher(new HttpTextFetcher(), new CrptReleaseExtractor());
         Profile profile = new ProfileLoader().load();
         GroupMatcher matcher = new GroupMatcher();
         for (String url : urls) {

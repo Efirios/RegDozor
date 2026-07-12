@@ -6,10 +6,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Точка входа в приложение (класс с методом main).
- * Здесь мы "собираем" программу: читаем секреты, описываем подписки, создаём помощников
- * и двух координаторов — BaselineReporter (рассылка каталога обязанностей)
- * и MonitorRunner (мониторинг pravo.gov.ru) — и запускаем оба.
+ * Точка входа в приложение (класс с методом main) и «место сборки» (composition root):
+ * читаем секреты из окружения, описываем подписки, создаём всех помощников и координаторов
+ * и внедряем их друг в друга (dependency injection). Именно здесь делается конкретный выбор
+ * реализаций (напр. какой ArticleExtractor / RelevanceStrategy подставить).
+ *
+ * ТЕКУЩЕЕ RUN-СОСТОЯНИЕ: активен только планировщик «дозора» ЦРПТ (crptFeedMonitor.run() по расписанию).
+ * baselineReporter.run() и runner.run() (pravo) сейчас ЗАКОММЕНТИРОВАНЫ — включить, когда нужно.
  * Вся реальная логика — в других классах; App только связывает их вместе.
  */
 public class App {
@@ -68,11 +71,13 @@ public class App {
         ProductLoader productLoader = new ProductLoader();
         AlertFormatter alertFormatter = new AlertFormatter();
         BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, telegramNotifier);
+        ArticleExtractor articleExtractor = new CrptReleaseExtractor();
 
-        CodeMatcher matcher = new CodeMatcher();
-        ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher);
-        RelevanceChecker relevanceChecker = new RelevanceChecker(matcher);
-        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceChecker,
+        ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher, articleExtractor);
+        GroupMatcher groupMatcher = new GroupMatcher();
+        Profile profile = new ProfileLoader().load();
+        RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
+        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy,
                 alertFormatter, telegramNotifier);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);

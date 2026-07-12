@@ -1,5 +1,13 @@
 package org.regdozor;
 
+/**
+ * «Форматировщик»: превращает одну товарную карточку (Product) в готовый текст сообщения.
+ * Собирает: заголовок (имя+коды) -> статус маркировки (3 ветки по markingRequired, включая null) ->
+ * по каждой обязанности: срок, риск (или «не проверен»), основание -> дата сверки -> ДИСКЛЕЙМЕР.
+ * Текст несёт HTML-разметку Telegram (&lt;b&gt;/&lt;u&gt;/&lt;a&gt;) — то есть класс СЕЙЧАС привязан к Telegram.
+ * Это осознанный «шов»: при втором канале вывода (почта/iOS) надо будет развязать «что показать» и «как разметить».
+ * Дисклеймер — обязательная часть каждого сообщения (продукт — «дозорный», не юрист).
+ */
 public class AlertFormatter {
     private static final String DISCLAIMER = "Не является юридической консультацией. Сверяйтесь с первоисточником.";
 
@@ -30,7 +38,7 @@ public class AlertFormatter {
                 sb.append("❔ Риск: не проверен").append("\n");
             }
 
-            sb.append("Основание: <a href=\"").append(o.sourceUrl()).append("\">").append(o.source()).append("</a>\n\n");
+            sb.append("Основание: <a href=\"").append(o.sourceUrl()).append("\">").append(o.source()).append("</a>\n");
         }
 
         sb.append("Коды и сроки проверены: ").append(p.verifiedOn()).append("\n");

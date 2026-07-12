@@ -37,7 +37,7 @@ public class ResourceTextReader {
             byte[] bytes = is.readAllBytes();
 
             // Декодируем байты в строку (UTF-8).
-            // Теперь это обычный текст HTML.
+            // Теперь это обычный текст файла (у нас — JSON: products.json / profile.json).
             return new String(bytes, StandardCharsets.UTF_8);
 
         } catch (IOException e) {

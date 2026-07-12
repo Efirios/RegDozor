@@ -10,7 +10,7 @@ import java.util.List;
  * это отсекает ложные срабатывания по широкому 4-значному коду (юбки 6104 vs СИЗ волны-4).
  * okpd2 может быть null → матчим по одному ТН ВЭД (грубый флаг).
  */
-public class RelevanceChecker {
+public class RelevanceChecker implements RelevanceStrategy{
     private final CodeMatcher matcher;
 
     public RelevanceChecker(CodeMatcher matcher) {
@@ -20,6 +20,7 @@ public class RelevanceChecker {
         this.matcher = matcher;
     }
 
+    @Override
     public List<Product> findRelevant(String text, Product[] products) {
         List<Product> relevant = new ArrayList<>();
 
