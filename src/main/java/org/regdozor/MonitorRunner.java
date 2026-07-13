@@ -18,15 +18,15 @@ public class MonitorRunner {
     private final HttpTextFetcher fetcher;
     /** Помощник "память": что мы уже видели в прошлых запусках. */
     private final SeenStore seenStore;
-    /** Помощник "оповещатель": шлёт сообщения в Telegram. */
-    private final TelegramNotifier telegramNotifier;
+    /** «Рассыльщик»: шлёт сообщения всем подписчикам из реестра. */
+    private final Broadcaster broadcaster;
 
     /**
      * Все зависимости приходят снаружи (dependency injection) и проверяются на null.
      * Так MonitorRunner не привязан к конкретным реализациям и его легко тестировать.
      */
     public MonitorRunner(List<Subscription> subscriptions, HttpTextFetcher fetcher, SeenStore seenStore,
-                         TelegramNotifier telegramNotifier) {
+                         Broadcaster broadcaster) {
         if (subscriptions == null || subscriptions.isEmpty()){
             throw new IllegalArgumentException("subscriptions не может быть null или пустым!");
         }
@@ -42,10 +42,10 @@ public class MonitorRunner {
         }
         this.seenStore = seenStore;
 
-        if (telegramNotifier == null){
-            throw new IllegalArgumentException("telegramNotifier не может быть null!");
+        if (broadcaster == null){
+            throw new IllegalArgumentException("broadcaster не может быть null!");
         }
-        this.telegramNotifier = telegramNotifier;
+        this.broadcaster = broadcaster;
     }
 
     /**
@@ -130,7 +130,7 @@ public class MonitorRunner {
         }
 
         for (DocumentItem di : newItems) {
-            telegramNotifier.send(di.title() + "\n" + di.documentUrl());
+            broadcaster.broadcast(di.title() + "\n" + di.documentUrl());
         }
 
         seenStore.save(seen);

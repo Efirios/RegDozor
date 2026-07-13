@@ -1,5 +1,7 @@
 package org.regdozor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,10 +24,10 @@ public class App {
             throw new IllegalStateException("не задана переменная окружения TG_BOT_TOKEN");
         }
 
-        String chatId = System.getenv("TG_CHAT_ID");
-        if (chatId == null || chatId.isBlank()){
-            throw new IllegalStateException("не задана переменная окружения TG_CHAT_ID");
-        }
+//        String chatId = System.getenv("TG_CHAT_ID");
+//        if (chatId == null || chatId.isBlank()){
+//            throw new IllegalStateException("не задана переменная окружения TG_CHAT_ID");
+//        }
 
         // Печатаем рабочую директорию — чтобы понимать, откуда программа ищет data/seen-eonumbers.txt.
         System.out.println(System.getProperty("user.dir"));
@@ -67,10 +69,12 @@ public class App {
         // Создаём помощников СНАРУЖИ и передаём внутрь runner (dependency injection).
         HttpTextFetcher httpTextFetcher = new HttpTextFetcher();   // "качалка" HTML
         SeenStore seenStore = new SeenStore("seen-eonumbers.txt");     // "память" о виденном
-        TelegramNotifier telegramNotifier = new TelegramNotifier(token, chatId);
+        TelegramNotifier telegramNotifier = new TelegramNotifier(token);
+        SeenStore subscriberStore = new SeenStore("chat-ids.txt");
+        Broadcaster broadcaster = new Broadcaster(subscriberStore, telegramNotifier);
         ProductLoader productLoader = new ProductLoader();
         AlertFormatter alertFormatter = new AlertFormatter();
-        BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, telegramNotifier);
+        BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, broadcaster);
         ArticleExtractor articleExtractor = new CrptReleaseExtractor();
 
         ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher, articleExtractor);
@@ -78,13 +82,17 @@ public class App {
         Profile profile = new ProfileLoader().load();
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
         DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy,
-                alertFormatter, telegramNotifier);
+                alertFormatter, broadcaster);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        ObjectMapper objectMapper = new ObjectMapper();
+        TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper, httpTextFetcher);
+        OffsetStore offsetStore = new OffsetStore("tg-offset.txt");
+        SubscriberMonitor subscriberMonitor = new SubscriberMonitor(telegramReceiver, offsetStore, subscriberStore);
 
         // Дирижёр получает подписки и всех помощников — и запускает процесс.
-        MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, telegramNotifier);
+        MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, broadcaster);
 
         scheduler.scheduleWithFixedDelay (
                 () -> {
@@ -96,6 +104,17 @@ public class App {
                     }
                 },
                 0, 24, TimeUnit.HOURS);
+
+        scheduler.scheduleWithFixedDelay (
+                () -> {
+                    try {
+                        System.out.println("Тик приёмника: " + java.time.LocalTime.now());
+                        subscriberMonitor.run();
+                    } catch (Exception e) {
+                        System.out.println("Приёмник упал: " + e.getMessage());
+                    }
+                },
+                0, 2, TimeUnit.SECONDS);
 
 //        baselineReporter.run();
         // мониторинг pravo.gov.ru временно отключён, чтобы не шуметь при отладке baseline. Вернуть, когда нужно.

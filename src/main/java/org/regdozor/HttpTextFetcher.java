@@ -42,7 +42,7 @@ public class HttpTextFetcher {
         URI asciiUri = URI.create(rawUri.toASCIIString());
 
         HttpRequest httpRequest = HttpRequest.newBuilder(asciiUri).GET().
-                timeout(Duration.ofSeconds(20)).header("User-Agent", "BizAssistant/0.1").
+                timeout(Duration.ofSeconds(20)).header("User-Agent", "RegDozor/0.1").
                 header("Accept", "text/html").build();
 
         try {

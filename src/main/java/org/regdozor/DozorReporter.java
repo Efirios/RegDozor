@@ -14,11 +14,11 @@ public class DozorReporter {
     private final ArticleTextFetcher articleTextFetcher;
     private final RelevanceStrategy relevanceStrategy;
     private final AlertFormatter alertFormatter;
-    private final TelegramNotifier telegramNotifier;
+    private final Broadcaster broadcaster;
 
     public DozorReporter(ProductLoader productLoader, ArticleTextFetcher articleTextFetcher,
                          RelevanceStrategy relevanceStrategy, AlertFormatter alertFormatter,
-                         TelegramNotifier telegramNotifier) {
+                         Broadcaster broadcaster) {
         if (productLoader == null) {
             throw new IllegalArgumentException("productLoader не может быть null!");
         }
@@ -39,10 +39,10 @@ public class DozorReporter {
         }
         this.alertFormatter = alertFormatter;
 
-        if (telegramNotifier == null) {
-            throw new IllegalArgumentException("telegramNotifier не может быть null!");
+        if (broadcaster == null) {
+            throw new IllegalArgumentException("broadcaster не может быть null!");
         }
-        this.telegramNotifier = telegramNotifier;
+        this.broadcaster = broadcaster;
     }
 
     public void run(String documentUrl) {
@@ -57,6 +57,6 @@ public class DozorReporter {
             sb.append(alertFormatter.format(p)).append("\n\n");
         }
         sb.append("📄 <a href=\"").append(documentUrl).append("\">Первоисточник</a>\n\n");
-        telegramNotifier.send(sb.toString());
+        broadcaster.broadcast(sb.toString());
     }
 }

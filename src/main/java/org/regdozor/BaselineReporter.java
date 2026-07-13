@@ -12,10 +12,10 @@ public class BaselineReporter {
     private final ProductLoader loader;
     /** «Форматировщик» одной товарной карточки в текст с HTML-разметкой Telegram. */
     private final AlertFormatter formatter;
-    /** «Оповещатель» в Telegram. */
-    private final TelegramNotifier notifier;
+    /** «Рассыльщик»: шлёт сообщение всем подписчикам из реестра. */
+    private final Broadcaster broadcaster;
 
-    public BaselineReporter(ProductLoader loader, AlertFormatter formatter, TelegramNotifier notifier) {
+    public BaselineReporter(ProductLoader loader, AlertFormatter formatter, Broadcaster broadcaster) {
         if (loader == null) {
             throw new IllegalArgumentException("loader не может быть null!");
         }
@@ -26,17 +26,17 @@ public class BaselineReporter {
         }
         this.formatter = formatter;
 
-        if (notifier == null) {
-            throw new IllegalArgumentException("notifier не может быть null!");
+        if (broadcaster == null) {
+            throw new IllegalArgumentException("broadcaster не может быть null!");
         }
-        this.notifier = notifier;
+        this.broadcaster = broadcaster;
     }
 
     /** Загружает каталог и отправляет по одному сообщению-карточке на каждый товар. */
     public void run() {
         Product[] products = loader.load();
         for (Product p : products) {
-            notifier.send(formatter.format(p));
+            broadcaster.broadcast(formatter.format(p));
         }
     }
 }

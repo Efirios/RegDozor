@@ -1,11 +1,19 @@
 package org.regdozor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpRequest;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -59,18 +67,44 @@ public class Diagnostic {
 //        Profile profile = new ProfileLoader().load();
 //        System.out.println(new GroupMatcher().concernsGroup(text,profile));
 
-        String url1 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-26-01-2026-po-30-01-2026/";
-        String url2 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-27-04-2026-po-30-04-2026/";
-        String url3 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-12-01-2026-po-16-01-2026/";
-        String url4 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-22-06-2026-po-26-06-2026/";
+//        String url1 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-26-01-2026-po-30-01-2026/";
+//        String url2 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-27-04-2026-po-30-04-2026/";
+//        String url3 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-12-01-2026-po-16-01-2026/";
+//        String url4 = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/chto-novogo-v-sisteme-s-22-06-2026-po-26-06-2026/";
+//
+//        List<String> urls = List.of(url1, url2, url3, url4);
+//        ArticleTextFetcher fetcher = new ArticleTextFetcher(new HttpTextFetcher(), new CrptReleaseExtractor());
+//        Profile profile = new ProfileLoader().load();
+//        GroupMatcher matcher = new GroupMatcher();
+//        for (String url : urls) {
+//            boolean relevant = matcher.concernsGroup(fetcher.fetchCleanText(url), profile);
+//            System.out.println(relevant + " ← " + url);
+//        }
 
-        List<String> urls = List.of(url1, url2, url3, url4);
-        ArticleTextFetcher fetcher = new ArticleTextFetcher(new HttpTextFetcher(), new CrptReleaseExtractor());
-        Profile profile = new ProfileLoader().load();
-        GroupMatcher matcher = new GroupMatcher();
-        for (String url : urls) {
-            boolean relevant = matcher.concernsGroup(fetcher.fetchCleanText(url), profile);
-            System.out.println(relevant + " ← " + url);
+        String botToken = System.getenv("TG_BOT_TOKEN");
+        if (botToken == null || botToken.isBlank()){
+            throw new IllegalStateException("не задана переменная окружения TG_BOT_TOKEN");
+        }
+
+        String url = "https://api.telegram.org/bot" + botToken + "/getUpdates";
+
+        String response  = new HttpTextFetcher().fetch(url);
+
+//        System.out.println(response);
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        try {
+            GetUpdatesResponse resp = mapper.readValue(response, GetUpdatesResponse.class);
+
+            for (Update update : resp.result()) {
+                if (update.message() != null) {
+                    System.out.println(update.message().chat().id());
+                    System.out.println(update.update_id());
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
 
     }

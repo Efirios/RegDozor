@@ -10,28 +10,21 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
- * «Оповещатель»: отправляет готовый текст пользователю в Telegram через Bot API (метод sendMessage).
- * botToken и chatId — это СЕКРЕТЫ; они приходят снаружи (App читает их из переменных окружения),
- * в коде их нет. Единственная задача класса — «дан текст, доставь его в чат».
+ * «Оповещатель»: отправляет готовый текст в ОДИН чат Telegram через Bot API (метод sendMessage).
+ * botToken — СЕКРЕТ, приходит снаружи (App читает его из переменной окружения), в коде его нет.
+ * Класс знает только «КАК отправить одному названному чату»; «КОМУ рассылать» решает Broadcaster.
  */
 public class TelegramNotifier {
     /** Токен бота — секрет. Вместе с ним формируется URL запроса, поэтому URL нельзя писать в логи. */
     private final String botToken;
-    /** Идентификатор чата-получателя. */
-    private final String chatId;
     /** Переиспользуемый HTTP-клиент (один на всё время жизни объекта). */
     private final HttpClient client;
 
-    public TelegramNotifier(String botToken, String chatId) {
+    public TelegramNotifier(String botToken) {
         if (botToken == null || botToken.isBlank()){
             throw new IllegalStateException("не задана переменная окружения botToken");
         }
         this.botToken = botToken;
-
-        if (chatId == null || chatId.isBlank()){
-            throw new IllegalStateException("не задана переменная окружения chatId");
-        }
-        this.chatId = chatId;
 
         this.client = HttpClient.newBuilder().
                 version(HttpClient.Version.HTTP_1_1).
@@ -41,11 +34,12 @@ public class TelegramNotifier {
     }
 
     /**
-     * Отправляет сообщение в чат. Текст может содержать HTML-разметку Telegram (теги &lt;b&gt;, &lt;a&gt;…).
+     * Отправляет сообщение в указанный чат. Текст может содержать HTML-разметку Telegram (теги &lt;b&gt;, &lt;a&gt;…).
      *
-     * @param text готовый текст сообщения (напр. собранный AlertFormatter)
+     * @param chatId идентификатор чата-получателя
+     * @param text   готовый текст сообщения (напр. собранный AlertFormatter)
      */
-    public void send(String text) {
+    public void send(String chatId, String text) {
         // link_preview_options={"is_disabled":true} — выключаем «превью» ссылок, чтобы карточка
         // не раздувалась картинками из ссылок. Значение — это JSON, его тоже надо закодировать для URL.
         String linkPreview = URLEncoder.encode("{\"is_disabled\":true}", StandardCharsets.UTF_8);
