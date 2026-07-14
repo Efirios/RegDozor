@@ -86,7 +86,7 @@ public class App {
                 new SeenStore("seen-releases.txt"), dozorReporter);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         ObjectMapper objectMapper = new ObjectMapper();
-        TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper, httpTextFetcher);
+        TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper);
         OffsetStore offsetStore = new OffsetStore("tg-offset.txt");
         SubscriberMonitor subscriberMonitor = new SubscriberMonitor(telegramReceiver, offsetStore, subscriberStore);
 
