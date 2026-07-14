@@ -9,7 +9,7 @@ package org.regdozor;
  * Дисклеймер — обязательная часть каждого сообщения (продукт — «дозорный», не юрист).
  */
 public class AlertFormatter {
-    private static final String DISCLAIMER = "Не является юридической консультацией. Сверяйтесь с первоисточником.";
+    public static final String DISCLAIMER = "Не является юридической консультацией. Сверяйтесь с первоисточником.";
 
     public String format(Product p) {
         StringBuilder sb = new StringBuilder();

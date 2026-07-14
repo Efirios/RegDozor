@@ -30,4 +30,50 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <!-- finalName задаёт имя выходного файла: target/regdozor.jar (без версии в имени). -->
+        <finalName>regdozor</finalName>
+        <plugins>
+            <!-- maven-shade-plugin: на фазе package пакует наш код ВМЕСТЕ со всеми зависимостями
+                 (jackson, jsoup) в один самодостаточный "толстый" JAR и прописывает Main-Class. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <!-- привязываем цель shade к фазе package: `mvn package` соберёт fat JAR -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <!-- пишет в манифест Main-Class — точку входа для `java -jar` -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.regdozor.App</mainClass>
+                                </transformer>
+                                <!-- сливает META-INF/services из разных зависимостей, чтобы SPI не потерялся -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <!-- выкидываем мусор, из-за которого fat JAR иногда не запускается:
+                                     дублирующиеся module-info и подписи чужих JAR-ов -->
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

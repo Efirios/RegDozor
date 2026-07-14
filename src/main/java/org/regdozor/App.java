@@ -81,8 +81,7 @@ public class App {
         GroupMatcher groupMatcher = new GroupMatcher();
         Profile profile = new ProfileLoader().load();
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
-        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy,
-                alertFormatter, broadcaster);
+        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy, broadcaster);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);

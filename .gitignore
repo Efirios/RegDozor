@@ -1,4 +1,6 @@
 target/
+# Побочный файл maven-shade-plugin при сборке fat JAR — не исходник.
+dependency-reduced-pom.xml
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
