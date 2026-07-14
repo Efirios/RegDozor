@@ -40,6 +40,12 @@ public class DozorReporter {
         this.broadcaster = broadcaster;
     }
 
+    /**
+     * Обрабатывает ОДИН документ: скачать текст → проверить релевантность → при попадании разослать всем.
+     * Если документ не про пользователя — молчит (сообщения, которого не должно быть, не создаём).
+     *
+     * @param documentUrl ссылка на документ (у нас — выпуск честныйзнак из ленты релизов)
+     */
     public void run(String documentUrl) {
         Product[] products = productLoader.load();
         String text = articleTextFetcher.fetchCleanText(documentUrl);

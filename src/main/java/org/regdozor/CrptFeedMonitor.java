@@ -34,7 +34,15 @@ public class CrptFeedMonitor {
         this.dozorReporter = dozorReporter;
     }
 
+    /**
+     * Один прогон дозора: скачать ленту релизов, взять ссылки на выпуски, отобрать НОВЫЕ (по SeenStore)
+     * и прогнать каждый через DozorReporter. Зовётся планировщиком раз в сутки.
+     * Порядок: seen.add() ПОСЛЕ dozorReporter.run(), save() в самом конце — доставка «хотя бы один раз»
+     * (если отправка упадёт, ссылка не запомнится и на следующем прогоне попробуем снова).
+     */
     public void run() {
+        // Домен кириллический (честныйзнак.рф), но HttpTextFetcher не умеет переводить ХОСТ в punycode —
+        // поэтому пишем адрес сразу в punycode-виде. TODO: научить fetcher java.net.IDN.toASCII(host).
         final String feedUrl = "https://xn--80ajghhoc2aj1c8b.xn--p1ai/info/releasenotes/";
         String html = fetcher.fetch(feedUrl);
         Document doc = Jsoup.parse(html, "https://xn--80ajghhoc2aj1c8b.xn--p1ai");

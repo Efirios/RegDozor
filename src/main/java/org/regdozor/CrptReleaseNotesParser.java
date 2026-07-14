@@ -15,7 +15,15 @@ import java.util.List;
  * Схема имени как у PravoSearchParser: &lt;Источник&gt;&lt;Что&gt;Parser.
  */
 public class CrptReleaseNotesParser {
+    /**
+     * Достаёт из страницы ленты ссылки на все выпуски.
+     *
+     * @param doc распарсенная страница ленты. ВАЖНО: её надо парсить с БАЗОВЫМ URL сайта
+     *            (Jsoup.parse(html, baseUrl)) — иначе absUrl() не сможет достроить относительные ссылки.
+     * @return абсолютные ссылки на выпуски (пустой список, если ничего не нашлось)
+     */
     static List<String> parse(Document doc) {
+        // Селектор берёт только заголовки-ссылки выпусков — без дублей от кнопок «читать далее».
         Elements links = doc.select("a.news-list3__title");
         List<String> list = new ArrayList<>();
 

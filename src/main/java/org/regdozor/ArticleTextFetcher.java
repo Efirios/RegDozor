@@ -26,9 +26,15 @@ public class ArticleTextFetcher {
         this.extractor = extractor;
     }
 
+    /**
+     * По адресу статьи отдаёт её чистый текст (без меню, шапки и прочего шума).
+     *
+     * @param url адрес статьи
+     * @return текст, готовый для матчинга (по кодам или по названию группы)
+     */
     public String fetchCleanText(String url) {
-        String html = fetcher.fetch(url);
-        Document doc = Jsoup.parse(html);
-        return extractor.extractText(doc);
+        String html = fetcher.fetch(url);      // общее: скачать
+        Document doc = Jsoup.parse(html);      // общее: разобрать HTML в дерево
+        return extractor.extractText(doc);     // САЙТ-СПЕЦИФИЧНОЕ: делегируем внедрённой реализации
     }
 }

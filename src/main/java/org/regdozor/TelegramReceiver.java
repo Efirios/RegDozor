@@ -49,6 +49,15 @@ public class TelegramReceiver {
                 build();
     }
 
+    /**
+     * Спрашивает у Telegram накопившиеся обновления и отдаёт их разобранными.
+     * Вызов ВИСИТ до 10 секунд, если обновлений нет (long polling), и отвечает сразу, если есть.
+     * Поэтому «тики» приёмника в логе идут неравномерно: ~2 сек когда есть входящие, ~12 сек когда тихо.
+     *
+     * @param offset с какого номера отдавать. Одновременно ПОДТВЕРЖДЕНИЕ: всё, что ниже offset,
+     *               Telegram считает обработанным и больше никогда не вернёт. 0 = «отдай всё, что есть».
+     * @return разобранный ответ (result может быть пустым — это норма)
+     */
     public GetUpdatesResponse receive(long offset) {
         String url = "https://api.telegram.org/bot" + botToken + "/getUpdates?offset=" + offset + "&timeout=10";
         HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(url)).GET().timeout(Duration.ofSeconds(20)).build();

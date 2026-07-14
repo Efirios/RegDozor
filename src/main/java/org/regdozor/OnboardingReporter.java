@@ -27,6 +27,14 @@ public class OnboardingReporter {
         this.baselineReporter = baselineReporter;
     }
 
+    /**
+     * Встречает нового подписчика: сначала приветствие, следом — его baseline-карточки.
+     * Приветствие нужно именно ПЕРЕД карточками: иначе три карточки прилетят «из ниоткуда»
+     * и человек не поймёт, что это и почему ему пришло.
+     * Ходит в сеть → может упасть. Вызывающий (SubscriberMonitor) обязан ловить и повторять.
+     *
+     * @param chatId кому (id нового подписчика)
+     */
     public void onboard(String chatId) {
         StringBuilder sb = new StringBuilder();
 
