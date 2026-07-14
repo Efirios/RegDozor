@@ -57,6 +57,11 @@ public class SubscriberMonitor {
         this.welcomedStore = welcomedStore;
     }
 
+    /**
+     * Один тик приёмника: спросить Telegram про новые обновления, зарегистрировать написавших,
+     * встретить тех, кого ещё не встречали. Зовётся планировщиком каждые несколько секунд.
+     * Порядок шагов внутри критичен — см. Javadoc класса (защита от livelock).
+     */
     public void run() {
         long offset = offsetStore.load();
         GetUpdatesResponse getUpdatesResponse = telegramReceiver.receive(offset);

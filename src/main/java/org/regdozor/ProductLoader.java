@@ -14,6 +14,11 @@ public class ProductLoader {
     // ObjectMapper — «переводчик» JSON ⇄ объекты Java. Один на класс, переиспользуется.
     ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Читает products.json и превращает его в массив товарных карточек.
+     *
+     * @return весь каталог товаров пользователя
+     */
     public Product[] load() {
         String json = ResourceTextReader.read("products.json");
         // FAIL_ON_UNKNOWN_PROPERTIES=false: не падать, если в JSON есть поле, которого нет в record

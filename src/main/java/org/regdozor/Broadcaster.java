@@ -29,6 +29,12 @@ public class Broadcaster {
         this.telegramNotifier = telegramNotifier;
     }
 
+    /**
+     * Шлёт один и тот же текст ВСЕМ подписчикам из реестра.
+     * Реестр читается на каждый вызов — значит подписавшиеся только что тоже получат.
+     *
+     * @param text готовое сообщение (уже с HTML-разметкой Telegram)
+     */
     public void broadcast(String text) {
         Set<String> chatIds = seenStore.load();
         for (String chatId : chatIds) {

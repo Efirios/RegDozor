@@ -10,6 +10,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ProfileLoader {
 
+    /**
+     * Читает profile.json и превращает его в объект Profile.
+     *
+     * @return профиль пользователя (термины его товарной группы)
+     */
     public Profile load() {
         String json = ResourceTextReader.read("profile.json");
         ObjectMapper mapper = new ObjectMapper();

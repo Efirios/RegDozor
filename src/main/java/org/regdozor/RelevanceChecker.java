@@ -20,11 +20,18 @@ public class RelevanceChecker implements RelevanceStrategy{
         this.matcher = matcher;
     }
 
+    /**
+     * Товар релевантен ⟺ в тексте найдены ВСЕ его коды (а не «хотя бы один»).
+     * Правило «все» отсекает ложные срабатывания по широкому 4-значному ТН ВЭД:
+     * позиция 6104 накрывает и юбки клиента, и спецодежду/СИЗ из другой волны —
+     * различает их только второй код, ОКПД2.
+     */
     @Override
     public List<Product> findRelevant(String text, Product[] products) {
         List<Product> relevant = new ArrayList<>();
 
         for (Product p : products) {
+            // Собираем коды товара, по которым будем искать: ТН ВЭД обязательно, ОКПД2 — если задан.
             List<String> codes = new ArrayList<>();
 
             codes.add(p.code());
@@ -35,6 +42,8 @@ public class RelevanceChecker implements RelevanceStrategy{
 
             List<String> found = matcher.findMentioned(text, codes);
 
+            // Ключевое условие: найдено СТОЛЬКО ЖЕ, сколько искали → значит найдены ВСЕ.
+            // Если ОКПД2 не задан (null), ищем по одному коду — это грубый флаг, зато не молчим.
             if (found.size() == codes.size()) {
                 relevant.add(p);
             }

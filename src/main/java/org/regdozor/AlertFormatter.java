@@ -9,14 +9,36 @@ package org.regdozor;
  * Дисклеймер — обязательная часть каждого сообщения (продукт — «дозорный», не юрист).
  */
 public class AlertFormatter {
+    /**
+     * Обязательная приписка к КАЖДОМУ сообщению бота. Публичная и статическая намеренно:
+     * её переиспользуют DozorReporter и OnboardingReporter (через AlertFormatter.DISCLAIMER),
+     * чтобы текст жил в ОДНОМ месте и не разъехался по копиям.
+     */
     public static final String DISCLAIMER = "Не является юридической консультацией. Сверяйтесь с первоисточником.";
 
+    /**
+     * Собирает текст одной товарной карточки.
+     * StringBuilder — «копилка строк»: строки в Java неизменяемы, и склейка через + в цикле
+     * порождала бы новую строку на каждом шаге. StringBuilder копит всё в одном буфере.
+     * Он ЛОКАЛЬНЫЙ (не поле класса) — поэтому метод безопасно звать из разных потоков.
+     *
+     * @param p товар из каталога
+     * @return готовый текст с HTML-разметкой Telegram
+     */
     public String format(Product p) {
         StringBuilder sb = new StringBuilder();
+
+        // ЗАГОЛОВОК: колокольчик + название товара (жирным и подчёркнутым) + оба кода.
+        // Эмодзи записаны escape-последовательностями (🔔 и т.п.) — Java хранит их двумя символами.
+        // productNames().get(0) — берём первое (основное) имя товара из списка синонимов.
 
         sb.append("\uD83D\uDD14 <u><b>").append(p.productNames().get(0)).append("</b></u>").append(" (ТН ВЭД: ").append(p.code()).append(",").
                 append(" ОКПД2: ").append(p.okpd2()).append(")").append("\n");
 
+        // СТАТУС — три ветки, и null проверяется ПЕРВЫМ. Это не стиль, а необходимость:
+        // markingRequired имеет тип Boolean (объект!), а не boolean, и может быть null = «не определено».
+        // Если не отсечь null первым, то в условии `else if (p.markingRequired())` Java попыталась бы
+        // распаковать null в примитив boolean — и упала бы с NullPointerException.
         if (p.markingRequired() == null) {
             sb.append("Статус маркировки не определён\n");
         } else if (p.markingRequired()) {
@@ -25,10 +47,15 @@ public class AlertFormatter {
             sb.append("Не подлежит обязательной маркировке\n");
         }
 
+        // ОБЯЗАННОСТИ: у товара их несколько (нанесение / внесение сведений в ГИС МТ),
+        // и у КАЖДОЙ свой срок и свой риск — поэтому цикл, а не одна строка.
         for (Obligation o : p.obligations()) {
-            Risk r = o.risk();
+            Risk r = o.risk();   // риск живёт внутри обязанности и может быть null (ещё не сверяли)
             sb.append("\n• ").append(o.what()).append(" — с <u><b>").append(o.since()).append("</b></u>").append("\n");
 
+            // РИСК: статья КоАП + размер штрафа. Штраф ОБЯЗАН нести указание субъекта
+            // (у ИП и у юрлица суммы отличаются в разы) — это зашито в данные, не здесь.
+            // Ссылка риска ведёт на КоАП, а «Основание» ниже — на ППРФ: РАЗНЫЕ акты, не путать.
             if (r != null) {
                 sb.append("\uD83D\uDCB8 Риск: ").append(r.article()).append(" — <u><b>").append(r.fine()).append(" + ").
                         append(r.consequence()).append(".").append("</b></u>\n");
@@ -38,9 +65,12 @@ public class AlertFormatter {
                 sb.append("❔ Риск: не проверен").append("\n");
             }
 
+            // ОСНОВАНИЕ обязанности — постановление (ППРФ). Оформлено как <a href="URL">текст</a>:
+            // Telegram свернёт длинную ссылку в кликабельный текст.
             sb.append("Основание: <a href=\"").append(o.sourceUrl()).append("\">").append(o.source()).append("</a>\n");
         }
 
+        // ПОДВАЛ: дата сверки кодов/сроков и обязательный дисклеймер.
         sb.append("Коды и сроки проверены: ").append(p.verifiedOn()).append("\n");
         sb.append("\n⚠\uFE0F ").append(DISCLAIMER);
 
