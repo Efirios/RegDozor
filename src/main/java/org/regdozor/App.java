@@ -13,8 +13,10 @@ import java.util.concurrent.TimeUnit;
  * и внедряем их друг в друга (dependency injection). Именно здесь делается конкретный выбор
  * реализаций (напр. какой ArticleExtractor / RelevanceStrategy подставить).
  *
- * ТЕКУЩЕЕ RUN-СОСТОЯНИЕ: активен только планировщик «дозора» ЦРПТ (crptFeedMonitor.run() по расписанию).
- * baselineReporter.run() и runner.run() (pravo) сейчас ЗАКОММЕНТИРОВАНЫ — включить, когда нужно.
+ * ТЕКУЩЕЕ RUN-СОСТОЯНИЕ: на планировщике крутятся ДВЕ задачи — дозор ЦРПТ (раз в сутки)
+ * и приёмник подписчиков (раз в 2 сек, long polling). Мониторинг pravo (runner.run()) ЗАКОММЕНТИРОВАН.
+ * Baseline-карточки БОЛЬШЕ НЕ шлются при старте: теперь это событие ПОДПИСКИ — их отправляет
+ * OnboardingReporter новичку в момент, когда тот впервые написал боту.
  * Вся реальная логика — в других классах; App только связывает их вместе.
  */
 public class App {
@@ -74,7 +76,8 @@ public class App {
         Broadcaster broadcaster = new Broadcaster(subscriberStore, telegramNotifier);
         ProductLoader productLoader = new ProductLoader();
         AlertFormatter alertFormatter = new AlertFormatter();
-        BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, broadcaster);
+        BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, telegramNotifier);
+        OnboardingReporter onboardingReporter = new OnboardingReporter(telegramNotifier, baselineReporter);
         ArticleExtractor articleExtractor = new CrptReleaseExtractor();
 
         ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher, articleExtractor);
@@ -88,7 +91,9 @@ public class App {
         ObjectMapper objectMapper = new ObjectMapper();
         TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper);
         OffsetStore offsetStore = new OffsetStore("tg-offset.txt");
-        SubscriberMonitor subscriberMonitor = new SubscriberMonitor(telegramReceiver, offsetStore, subscriberStore);
+        SeenStore welcomedStore = new SeenStore("welcomed.txt");
+        SubscriberMonitor subscriberMonitor = new SubscriberMonitor(telegramReceiver, offsetStore, subscriberStore,
+                onboardingReporter,welcomedStore);
 
         // Дирижёр получает подписки и всех помощников — и запускает процесс.
         MonitorRunner runner = new MonitorRunner(subscriptions, httpTextFetcher, seenStore, broadcaster);
@@ -114,8 +119,7 @@ public class App {
                     }
                 },
                 0, 2, TimeUnit.SECONDS);
-
-//        baselineReporter.run();
+        
         // мониторинг pravo.gov.ru временно отключён, чтобы не шуметь при отладке baseline. Вернуть, когда нужно.
 //        runner.run();
     }

@@ -3,7 +3,13 @@ package org.regdozor;
 /**
  * Координатор ветки «baseline» («что действует у тебя СЕГОДНЯ»): в отличие от «дозора»
  * (реакция на новый документ) — берёт весь каталог и шлёт по карточке на каждый товар.
- * Нужен для «холодного старта»: пользователь сразу видит свои действующие обязанности.
+ * Решает «холодный старт»: подписчик сразу видит свои действующие обязанности.
+ *
+ * Шлёт ОДНОМУ названному чату (sendTo), а не всем: baseline — это событие ПОДПИСКИ,
+ * а не запуска приложения. Раньше он рассылался всем на старте — при каждом перезапуске
+ * все получали карточки заново (спам), а подписавшийся позже не получал ничего.
+ * Теперь его зовёт онбординг нового подписчика.
+ *
  * Тонкий класс-дирижёр: сам ничего не считает, только связывает трёх помощников
  * (загрузка -> форматирование -> отправка).
  */
@@ -12,10 +18,10 @@ public class BaselineReporter {
     private final ProductLoader loader;
     /** «Форматировщик» одной товарной карточки в текст с HTML-разметкой Telegram. */
     private final AlertFormatter formatter;
-    /** «Рассыльщик»: шлёт сообщение всем подписчикам из реестра. */
-    private final Broadcaster broadcaster;
+    /** «Оповещатель»: шлёт текст в ОДИН названный чат. */
+    private final TelegramNotifier notifier;
 
-    public BaselineReporter(ProductLoader loader, AlertFormatter formatter, Broadcaster broadcaster) {
+    public BaselineReporter(ProductLoader loader, AlertFormatter formatter, TelegramNotifier notifier) {
         if (loader == null) {
             throw new IllegalArgumentException("loader не может быть null!");
         }
@@ -26,17 +32,21 @@ public class BaselineReporter {
         }
         this.formatter = formatter;
 
-        if (broadcaster == null) {
-            throw new IllegalArgumentException("broadcaster не может быть null!");
+        if (notifier == null) {
+            throw new IllegalArgumentException("notifier не может быть null!");
         }
-        this.broadcaster = broadcaster;
+        this.notifier = notifier;
     }
 
-    /** Загружает каталог и отправляет по одному сообщению-карточке на каждый товар. */
-    public void run() {
+    /**
+     * Загружает каталог и отправляет указанному чату по одному сообщению-карточке на каждый товар.
+     *
+     * @param chatId кому шлём (обычно — новому подписчику при онбординге)
+     */
+    public void sendTo(String chatId) {
         Product[] products = loader.load();
         for (Product p : products) {
-            broadcaster.broadcast(formatter.format(p));
+            notifier.send(chatId, formatter.format(p));
         }
     }
 }
