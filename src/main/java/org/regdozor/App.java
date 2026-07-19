@@ -1,5 +1,6 @@
 package org.regdozor;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -8,9 +9,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Точка входа в приложение (класс с методом main) и «место сборки» (composition root):
- * читаем секреты из окружения, описываем подписки, создаём всех помощников и координаторов
- * и внедряем их друг в друга (dependency injection). Именно здесь делается конкретный выбор
+ * Точка входа и место сборки всей программы.
+ *
+ * Класс с методом main и «composition root»: читаем секреты из окружения, описываем подписки,
+ * создаём всех помощников и координаторов и внедряем их друг в друга (dependency injection). Именно здесь делается конкретный выбор
  * реализаций (напр. какой ArticleExtractor / RelevanceStrategy подставить).
  *
  * ТЕКУЩЕЕ RUN-СОСТОЯНИЕ: на планировщике крутятся ДВЕ задачи — дозор ЦРПТ (раз в сутки)
@@ -89,6 +91,7 @@ public class App {
                 new SeenStore("seen-releases.txt"), dozorReporter);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper);
         OffsetStore offsetStore = new OffsetStore("tg-offset.txt");
         SeenStore welcomedStore = new SeenStore("welcomed.txt");
