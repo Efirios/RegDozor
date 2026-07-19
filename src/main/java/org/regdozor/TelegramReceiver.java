@@ -1,7 +1,6 @@
 package org.regdozor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -13,8 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
- * «Приёмник»: зеркало TelegramNotifier — не шлёт, а СПРАШИВАЕТ у Telegram новые обновления
- * (метод Bot API getUpdates) и отдаёт их уже разобранными в {@link GetUpdatesResponse}.
+ * Спрашивает у Telegram новые обновления и отдаёт их разобранными.
+ *
+ * «Приёмник»: зеркало TelegramNotifier — тот шлёт, этот принимает. Метод Bot API getUpdates,
+ * результат — в {@link GetUpdatesResponse}.
  * Long polling: параметр timeout=10 — Telegram держит соединение до 10 сек, если обновлений нет.
  * Он ДОЛЖЕН быть меньше HTTP-таймаута (20 сек), иначе наш клиент оборвал бы связь раньше ответа.
  * Параметр offset подтверждает обработанное: всё, что ниже него, Telegram больше не отдаёт.
@@ -73,7 +74,6 @@ public class TelegramReceiver {
             // ВАЖНО про безопасность: в тексты ошибок НЕ подставляем url — он содержит botToken.
             // Иначе секрет утечёт в логи. Поэтому сообщения общие, без адреса запроса.
 
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             try {
                 return objectMapper.readValue(httpResponse.body(), GetUpdatesResponse.class);
             } catch (JsonProcessingException e) {

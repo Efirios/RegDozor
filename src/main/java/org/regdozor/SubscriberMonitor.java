@@ -3,7 +3,9 @@ package org.regdozor;
 import java.util.Set;
 
 /**
- * Координатор захвата подписчиков: опрашивает Telegram (getUpdates через TelegramReceiver),
+ * Ловит новых подписчиков и встречает их.
+ *
+ * Координатор захвата: опрашивает Telegram (getUpdates через TelegramReceiver),
  * записывает chat_id написавших в реестр и встречает новичков (через OnboardingReporter).
  * Крутится на планировщике раз в несколько секунд (long polling).
  *
