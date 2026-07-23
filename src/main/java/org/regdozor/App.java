@@ -81,14 +81,21 @@ public class App {
         BaselineReporter baselineReporter = new BaselineReporter(productLoader, alertFormatter, telegramNotifier);
         OnboardingReporter onboardingReporter = new OnboardingReporter(telegramNotifier, baselineReporter);
         ArticleExtractor articleExtractor = new CrptReleaseExtractor();
+        ArticleExtractor markirovkaArticleExtractor = new MarkirovkaReleaseExtractor();
 
         ArticleTextFetcher articleTextFetcher = new ArticleTextFetcher(httpTextFetcher, articleExtractor);
+        ArticleTextFetcher markirovkaArticleTextFetcher = new ArticleTextFetcher(httpTextFetcher, markirovkaArticleExtractor);
         GroupMatcher groupMatcher = new GroupMatcher();
         Profile profile = new ProfileLoader().load();
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
+        RelevanceStrategy codeStrategy = new RelevanceChecker(new CodeMatcher());
         DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy, broadcaster);
+        DozorReporter markirovkaDozor  = new DozorReporter(productLoader, markirovkaArticleTextFetcher, codeStrategy,
+                broadcaster);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
+        MarkirovkaFeedMonitor markirovkaFeedMonitor = new MarkirovkaFeedMonitor(httpTextFetcher,
+                new SeenStore("seen-markirovka.txt"), markirovkaDozor, profile);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -105,7 +112,8 @@ public class App {
                 () -> {
                     try {
                         System.out.println("Тик дозора: " + java.time.LocalTime.now());
-                        crptFeedMonitor.run();
+                        markirovkaFeedMonitor.run();
+//                        crptFeedMonitor.run();
                     } catch (Exception e) {
                         System.out.println("Дозор упал: " + e.getMessage());
                     }
