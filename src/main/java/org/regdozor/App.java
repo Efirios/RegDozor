@@ -2,6 +2,20 @@ package org.regdozor;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.regdozor.catalog.AlertFormatter;
+import org.regdozor.catalog.ProductLoader;
+import org.regdozor.crpt.*;
+import org.regdozor.match.*;
+import org.regdozor.net.HttpTextFetcher;
+import org.regdozor.pravo.MonitorRunner;
+import org.regdozor.pravo.Subscription;
+import org.regdozor.profile.Profile;
+import org.regdozor.profile.ProfileLoader;
+import org.regdozor.report.BaselineReporter;
+import org.regdozor.report.DozorReporter;
+import org.regdozor.store.OffsetStore;
+import org.regdozor.store.SeenStore;
+import org.regdozor.telegram.*;
 
 import java.util.List;
 import java.util.concurrent.Executors;
