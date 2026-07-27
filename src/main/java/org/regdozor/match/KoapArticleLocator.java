@@ -1,7 +1,7 @@
 package org.regdozor.match;
 
 public class KoapArticleLocator {
-    public int findArticleStart(String koapHtml, String baseNumber, int superscript) {
+    private int findArticleStart(String koapHtml, String baseNumber, int superscript) {
         String anchor;
 
         if (superscript == 0) {
@@ -17,5 +17,27 @@ public class KoapArticleLocator {
         }
 
         return start;
+    }
+
+    private String cutArticle(String koapHtml, String baseNumber, int superscript) {
+        int start = findArticleStart(koapHtml, baseNumber, superscript);
+        int end = koapHtml.indexOf("<p class=\"H\"", start);
+
+        if (end == -1) {
+            return koapHtml.substring(start, koapHtml.length());
+        } else {
+            return koapHtml.substring(start, end);
+        }
+    }
+
+    public String locateArticle(String koapHtml, String baseNumber, int superscript) {
+        String article = cutArticle(koapHtml, baseNumber, superscript);
+
+        if (!(article.contains("маркировк") && article.contains("должностных лиц"))) {
+            throw new IllegalStateException("Нет совпадений по названиям. Статья " + baseNumber + "^" +
+                    superscript + " могла измениться");
+        }
+
+        return article;
     }
 }
