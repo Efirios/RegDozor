@@ -1,15 +1,16 @@
 [
   {
-    "id": "chz-registration",
-    "title": "",
-    "summary": "",
-    "status": "действует",
-    "appliesToRoles": ["маркетплейс", "розница"],
-    "actions": [ { "text": "", "source": "" } ],
-    "deadlines": [],
-    "risk": { "level": "", "consequence": "", "article": "", "source": "" },
-    "sources": [ { "name": "", "url": "" } ],
-    "verifiedOn": "2026-07-08",
-    "disclaimer": "Не является юридической консультацией. Сверяйтесь с первоисточником."
+    "group": "одежда",
+    "obligation": "нанесение",
+    "baseNumber": "15.12",
+    "superscript": 0,
+    "part": "1"
+  },
+  {
+    "group": "одежда",
+    "obligation": "ГИС МТ",
+    "baseNumber": "15.12",
+    "superscript": 1,
+    "part": null
   }
 ]
