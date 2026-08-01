@@ -32,21 +32,32 @@ public class ObligationTableLoader {
      * @throws RuntimeException если json не разобрался (обёрнутый {@code JsonProcessingException})
      */
     public Map<ObligationKey, ObligationArticle> load() {
+        // читаем файл-ресурс obligations.json в одну строку (пока это просто текст json)
         String json = ResourceTextReader.read("obligations.json");
+        // берём «переводчик» Jackson — он превращает json-текст в Java-объекты
         ObjectMapper objectMapper = new ObjectMapper();
+        // настраиваем переводчик: встретит в json лишнее поле, которого нет в record'е, — не падать, а пропустить
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
+            // переводим строку json в массив записей: json-массив [ ] → ObligationArticle[]
             ObligationArticle[] rows = objectMapper.readValue(json, ObligationArticle[].class);
+            // заводим пустую карту-справочник: слева контракт Map, справа конкретная реализация HashMap
             Map<ObligationKey, ObligationArticle> table = new HashMap<>();
 
+            // проходим по каждой записи массива
             for (ObligationArticle row : rows) {
+                // собираем составной ключ из двух полей записи: (группа, обязанность)
                 ObligationKey key = new ObligationKey(row.group(), row.obligation());
+                // кладём в карту: под этим ключом лежит вся запись row
                 table.put(key, row);
             }
 
+            // отдаём заполненную карту наружу
             return table;
+        // сюда попадаем, если json битый и readValue кинул проверяемое JsonProcessingException
         } catch (JsonProcessingException e) {
+            // перебрасываем как непроверяемое RuntimeException, обернув причину (битый ресурс не починить на лету)
             throw new RuntimeException(e);
         }
     }
