@@ -49,29 +49,60 @@ public class KoapPenaltyExtractor {
     }
 
     /**
-     * В тексте части находит абзац субъекта («на должностных лиц …») до границы «{@code ; на}»
-     * (следующий субъект) и возвращает его ЧИСТЫМ текстом.
+     * Собирает цитату штрафа для субъекта из ДВУХ кусков и отдаёт чистым текстом.
      *
-     * Сперва снимает теги через {@code Jsoup.parse(partHtml).text()} — заодно НОРМАЛИЗУЕТ пробелы
-     * (неразрывные становятся обычными), так что дальше про U+00A0 думать не надо. Потом режет от
-     * субъекта до «; на».
+     * Санкция устроена так: «влечёт [предупреждение или] наложение штрафа на &lt;субъект1&gt; …; на &lt;субъект2&gt; …».
+     * Тип санкции стоит ОДИН раз в начале, амаунты субъектов — списком после. Для не-первого субъекта
+     * (юрлицо) между санкцией и его амаунтом вклиниваются чужие — поэтому берём ДВА куска и склеиваем:
+     * (1) тип санкции — от «влечет» до конца слова «штрафа»; (2) амаунт субъекта — от {@code subject}
+     * до конца его клаузы (ближайшее из «; на» и «.»; у последнего субъекта «; на» нет → берём «.»).
+     *
+     * ⚠️ Сперва {@code Jsoup.parse(partHtml).text()} снимает теги и НОРМАЛИЗУЕТ пробелы (неразрывные →
+     *    обычные), поэтому про U+00A0 тут думать не надо.
      */
     private String subjectPenalty(String partHtml, String subject) {
+        // снимаем теги (заодно неразрывные пробелы → обычные) — дальше работаем с чистым текстом
         String text = Jsoup.parse(partHtml).text();
 
-        int start = text.indexOf(subject);
-        if (start == -1) {
+        // --- кусок 1: тип санкции (один на всех субъектов) ---
+        int startSanction = text.indexOf("влечет");   // начало клаузы штрафа
+        if (startSanction == -1) {                     // санкции нет → разметка/формулировка изменилась
+            throw new IllegalStateException("Фрагмент субъекта \"влечёт\" не существует");
+        }
+
+        int endSanction = text.indexOf("штрафа");      // слово «штрафа» в «наложение … штрафа»
+        if (endSanction == -1) {
+            throw new IllegalStateException("Фрагмент субъекта \"штрафа\" не существует");
+        }
+
+        // +длина слова, т.к. substring правый край не включает → «штрафа» войдёт целиком
+        String sanction  = text.substring(startSanction, endSanction + "штрафа".length());
+
+        // --- кусок 2: амаунт нужного субъекта ---
+        int start = text.indexOf(subject);             // начало клаузы субъекта («на должностных лиц» …)
+        if (start == -1) {                             // такого субъекта в тексте нет
             throw new IllegalStateException("Фрагмент субъекта \"" + subject +
                     "\" не существует");
         }
 
-        int boundary = text.indexOf("; на", start);
-        if (boundary == -1) {
+        int nextSubject = text.indexOf("; на", start);   // следующий субъект (если есть)
+        int sentenceEnd = text.indexOf(".", start);      // конец предложения санкции
+        int boundary;
+
+        if (nextSubject == -1) {                         // следующего субъекта нет (напр. юрлицо — последнее)
+            boundary = sentenceEnd;                      // → режем до точки
+        } else {
+            boundary = Math.min(nextSubject, sentenceEnd); // оба есть → берём раньшее
+        }
+
+        if (boundary == -1) {                          // не нашли ни «; на», ни «.» — маловероятно
             throw new IllegalStateException("Фрагмент субъекта \"" + subject +
                     "\" не найден в части — формулировка/разметка могла измениться");
         }
 
-        return text.substring(start, boundary);
+        String subjectAmount  = text.substring(start, boundary);   // «на <субъект> … рублей …»
+
+        return sanction + " " + subjectAmount;                  // тип санкции + пробел + амаунт субъекта
     }
 
     /**
