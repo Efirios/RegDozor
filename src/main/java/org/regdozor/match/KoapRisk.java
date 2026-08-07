@@ -1,6 +1,7 @@
 package org.regdozor.match;
 
 import org.regdozor.pravo.PravoEbpiTextFetcher;
+import org.regdozor.profile.Subject;
 
 import java.util.Map;
 
@@ -63,12 +64,15 @@ public class KoapRisk {
      *
      * @param group      товарная группа ("одежда")
      * @param obligation обязанность ("нанесение" / "ГИС МТ")
-     * @param subject    кого штрафуют, дословно: «на должностных лиц» (ИП)
+     * @param subject    правовая форма клиента ({@link Subject#IP} / {@link Subject#LEGAL}) — берётся из профиля.
+     *                   Типом, а не строкой: цена ошибки тут — штраф, отличающийся в 30 раз, и опечатку
+     *                   в строке компилятор бы не поймал. Формулировку КоАП («на должностных лиц») достаём
+     *                   у него сами — извлекатель про профили не знает и принимает голую строку
      * @return цитата штрафа из живой редакции КоАП (суммы словами)
      * @throws IllegalStateException если пары нет в таблице; либо ниже по цепочке (текст не готов —
      *                               канарейка читалки, статья или абзац субъекта не найдены)
      */
-    public String riskFor(String group, String obligation, String subject) {
+    public String riskFor(String group, String obligation, Subject subject) {
         // 1) таблица: по паре (группа, обязанность) достаём запись — куда (статья+часть) смотреть
         ObligationArticle row = table.get(new ObligationKey(group, obligation));
         // пары в таблице нет → не наша обязанность / таблицу не пополнили; не пускаем null дальше
@@ -81,7 +85,7 @@ public class KoapRisk {
         // 3) локатор: из текста КоАП вырезаем нужную статью по номеру+надстрочнику из записи
         String articleHtml = koapArticleLocator.locateArticle(koapHtml, row.baseNumber(), row.superscript());
         // 4) извлекатель: из статьи берём цитату штрафа для нужной части и субъекта
-        String koapPenalty = koapPenaltyExtractor.penaltyFor(articleHtml, row.part(), subject);
+        String koapPenalty = koapPenaltyExtractor.penaltyFor(articleHtml, row.part(), subject.getKoapWording());
         return koapPenalty;   // отдаём цитату наружу
     }
 }
