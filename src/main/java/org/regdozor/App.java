@@ -103,8 +103,8 @@ public class App {
         Profile profile = new ProfileLoader().load();
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
         RelevanceStrategy codeStrategy = new RelevanceChecker(new CodeMatcher());
-        DozorReporter dozorReporter = new DozorReporter(productLoader, articleTextFetcher, relevanceStrategy, broadcaster);
-        DozorReporter markirovkaDozor  = new DozorReporter(productLoader, markirovkaArticleTextFetcher, codeStrategy,
+        DozorReporter dozorReporter = new DozorReporter(profile, articleTextFetcher, relevanceStrategy, broadcaster);
+        DozorReporter markirovkaDozor  = new DozorReporter(profile, markirovkaArticleTextFetcher, codeStrategy,
                 broadcaster);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
