@@ -1,12 +1,12 @@
 package org.regdozor.match;
 
-import org.regdozor.catalog.Product;
+import org.regdozor.profile.UserProduct;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * "Проверка релевантности": какие товары каталога затронуты документом.
+ * "Проверка релевантности": какие товары ПОЛЬЗОВАТЕЛЯ (из профиля) затронуты документом.
  * Правило (официальное, сноска markirovka): маркируемость определяется ТН ВЭД + ОКПД2 ОДНОВРЕМЕННО.
  * Товар релевантен ⟺ в тексте найдены ВСЕ его коды (found.size() == codes.size()), а не «хотя бы один» —
  * это отсекает ложные срабатывания по широкому 4-значному коду (юбки 6104 vs СИЗ волны-4).
@@ -29,14 +29,14 @@ public class RelevanceChecker implements RelevanceStrategy{
      * различает их только второй код, ОКПД2.
      */
     @Override
-    public List<Product> findRelevant(String text, Product[] products) {
-        List<Product> relevant = new ArrayList<>();
+    public List<UserProduct> findRelevant(String text, List<UserProduct> userProducts) {
+        List<UserProduct> relevant = new ArrayList<>();
 
-        for (Product p : products) {
+        for (UserProduct p : userProducts) {
             // Собираем коды товара, по которым будем искать: ТН ВЭД обязательно, ОКПД2 — если задан.
             List<String> codes = new ArrayList<>();
 
-            codes.add(p.code());
+            codes.add(p.tnved());
 
             if (p.okpd2() != null) {
                 codes.add(p.okpd2());

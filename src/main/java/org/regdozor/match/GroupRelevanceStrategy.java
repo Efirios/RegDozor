@@ -2,14 +2,15 @@ package org.regdozor.match;
 
 import org.regdozor.catalog.Product;
 import org.regdozor.profile.Profile;
+import org.regdozor.profile.UserProduct;
 
 import java.util.List;
 
 /**
  * Реализация {@link RelevanceStrategy} «по названию товарной группы» — для релизов честныйзнак.рф,
  * которые описывают изменения НЕ кодами, а именами групп («одежда и бельё»).
- * Логика: если текст относится к группе пользователя (GroupMatcher по Profile) — считаем затронутым
- * ВЕСЬ ассортимент каталога; иначе — никого.
+ * Логика: если текст относится к группе пользователя (GroupMatcher по Profile) — считаем затронутыми
+ * ВСЕ товары профиля; иначе — никого.
  * ⚠️ Допущение «весь ассортимент» верно, пока группа одна; для мультигруппных профилей позже — фильтровать по группе.
  * Profile держим уже загруженным (грузится один раз в App), а не читаем файл на каждый вызов.
  */
@@ -32,9 +33,9 @@ public class GroupRelevanceStrategy implements RelevanceStrategy{
     }
 
     @Override
-    public List<Product> findRelevant(String text, Product[] products) {
+    public List<UserProduct> findRelevant(String text, List<UserProduct> userProducts) {
         if (groupMatcher.concernsGroup(text, profile)) {
-            return List.of(products);
+            return userProducts;
         }
         return List.of();
     }

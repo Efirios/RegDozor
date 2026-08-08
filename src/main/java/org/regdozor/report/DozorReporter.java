@@ -1,10 +1,10 @@
 package org.regdozor.report;
 
 import org.regdozor.catalog.AlertFormatter;
-import org.regdozor.catalog.Product;
-import org.regdozor.catalog.ProductLoader;
 import org.regdozor.crpt.ArticleTextFetcher;
 import org.regdozor.match.RelevanceStrategy;
+import org.regdozor.profile.Profile;
+import org.regdozor.profile.UserProduct;
 import org.regdozor.telegram.Broadcaster;
 
 import java.util.List;
@@ -15,23 +15,27 @@ import java.util.List;
  * Координатор «дозора»: run(url) скачивает чистый текст и через внедрённую
  * СТРАТЕГИЮ ({@link RelevanceStrategy} — по кодам ИЛИ по группе, решается при сборке в App) проверяет,
  * относится ли документ к товарам/группе пользователя.
- * Если да — шлёт КОРОТКОЕ уведомление: факт «вышел релиз по твоей группе» + ссылка на первоисточник + дисклеймер.
- * БЕЗ карточек с риском: группа-матч знает лишь, что релиз упоминает группу, но НЕ про что он именно, —
- * поэтому конкретику (обязанности/штрафы) не приписываем непрочитанному релизу, она живёт в baseline.
- * Если не релевантно — молчит (сообщения, которого не должно быть, не создаём).
+ * Если да — шлёт уведомление; не релевантно — молчит (сообщения, которого не должно быть, не создаём).
+ *
+ * Товары берёт из ПРОФИЛЯ (внедрён готовым, грузится один раз в App) — раньше на КАЖДЫЙ документ
+ * перечитывался каталог, это ушло вместе с переездом кодов в профиль.
+ *
+ * ⚠️ ТЕКСТ СООБЩЕНИЯ — ЗАГЛУШКА («вышел релиз по твоей группе» + ссылка). По решению Б (2026-08-01)
+ * его заменит пер-товарный алерт: товар + дата старта + ДОСЛОВНАЯ цитата этапов из статьи ЦРПТ +
+ * риск из КоАП по обязанностям ГРУППЫ ({@code KoapRisk}) + ссылки + дисклеймер.
  */
 public class DozorReporter {
-    private final ProductLoader productLoader;
+    private final Profile profile;
     private final ArticleTextFetcher articleTextFetcher;
     private final RelevanceStrategy relevanceStrategy;
     private final Broadcaster broadcaster;
 
-    public DozorReporter(ProductLoader productLoader, ArticleTextFetcher articleTextFetcher,
+    public DozorReporter(Profile profile, ArticleTextFetcher articleTextFetcher,
                          RelevanceStrategy relevanceStrategy, Broadcaster broadcaster) {
-        if (productLoader == null) {
-            throw new IllegalArgumentException("productLoader не может быть null!");
+        if (profile == null) {
+            throw new IllegalArgumentException("profile не может быть null!");
         }
-        this.productLoader = productLoader;
+        this.profile = profile;
 
         if (articleTextFetcher == null) {
             throw new IllegalArgumentException("articleTextFetcher не может быть null!");
@@ -56,9 +60,8 @@ public class DozorReporter {
      * @param documentUrl ссылка на документ (у нас — выпуск честныйзнак из ленты релизов)
      */
     public void run(String documentUrl) {
-        Product[] products = productLoader.load();
         String text = articleTextFetcher.fetchCleanText(documentUrl);
-        List<Product> relevant = relevanceStrategy.findRelevant(text, products);
+        List<UserProduct> relevant = relevanceStrategy.findRelevant(text, profile.products());
 
         if (relevant.isEmpty()) return;
 
