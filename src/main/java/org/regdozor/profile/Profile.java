@@ -16,6 +16,10 @@ import java.util.List;
  *                   От неё зависит РАЗМЕР штрафа: у ИП (отвечает как должностное лицо, прим. к ст. 2.4 КоАП)
  *                   5–10 тыс, у юрлица 50–300 тыс — расхождение в 30 раз, из текста статьи не выводится.
  *                   Хранится ТИП, а формулировку для КоАП («на должностных лиц») даёт {@code subject.getKoapWording()}.
+ * @param products   товары клиента с кодами ({@link UserProduct}) — список, продавец торгует несколькими.
+ *                   Это ФИЛЬТР №1 всего дозора: совпали коды товара с текстом статьи — алерт про ЭТОТ товар,
+ *                   не совпали — молчим. Даёт пер-товарную точность (продавец носков не получит алерт
+ *                   про шорты). Переехали сюда из каталога ({@code products.json}), который идёт под снос.
  */
-public record Profile(List<String> groupTerms, List<String> section, Subject subject) {
+public record Profile(List<String> groupTerms, List<String> section, Subject subject, List<UserProduct> products) {
 }
