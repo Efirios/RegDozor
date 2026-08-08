@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.regdozor.catalog.AlertFormatter;
 import org.regdozor.catalog.ProductLoader;
-import org.regdozor.crpt.*;
+import org.regdozor.operator.*;
 import org.regdozor.match.*;
 import org.regdozor.net.HttpTextFetcher;
 import org.regdozor.pravo.MonitorRunner;
