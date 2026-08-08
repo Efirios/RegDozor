@@ -1,7 +1,7 @@
 package org.regdozor.report;
 
 import org.regdozor.catalog.AlertFormatter;
-import org.regdozor.crpt.ArticleTextFetcher;
+import org.regdozor.operator.ArticleTextFetcher;
 import org.regdozor.match.RelevanceStrategy;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;

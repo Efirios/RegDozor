@@ -1,4 +1,4 @@
-package org.regdozor.crpt;
+package org.regdozor.operator;
 
 import org.jsoup.nodes.Document;
 
