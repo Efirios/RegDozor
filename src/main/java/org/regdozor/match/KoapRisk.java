@@ -3,10 +3,18 @@ package org.regdozor.match;
 import org.regdozor.pravo.PravoEbpiTextFetcher;
 import org.regdozor.profile.Subject;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Дирижёр риска: по (группа, обязанность, субъект) даёт готовую ЦИТАТУ штрафа из КоАП.
+ * Дирижёр риска: по группе товара и субъекту даёт готовые ЦИТАТЫ штрафов из КоАП.
+ *
+ * Две двери наружу: {@link #riskForObligation} — по ОДНОЙ названной обязанности;
+ * {@link #risksForGroup} — по ВСЕМ обязанностям группы (это и уходит в алерт). Общая сердцевина
+ * вынесена в {@link #penaltyFrom}, чтобы вырезание жило в одном месте, а число походов в сеть
+ * решал вызывающий.
  *
  * Связывает три куска — таблицу «(группа, обязанность) → статья+часть» ({@link ObligationTableLoader}),
  * локатор ({@link KoapArticleLocator}) и извлекатель ({@link KoapPenaltyExtractor}) — плюс читалку текста
@@ -60,6 +68,22 @@ public class KoapRisk {
     }
 
     /**
+     * Общая сердцевина обоих публичных методов: по УЖЕ полученному тексту КоАП и одной записи таблицы
+     * достать цитату штрафа.
+     *
+     * ⚠️ Текст КоАП принимает ПАРАМЕТРОМ, а не идёт за ним сам — в этом весь смысл: сколько раз ходить
+     * в сеть, решает вызывающий. {@link #riskForObligation} берёт текст один раз для одной записи,
+     * {@link #risksForGroup} — один раз на ВСЕ обязанности группы (иначе кодекс на 6.5 МБ качался бы
+     * по разу на обязанность).
+     */
+    private String penaltyFrom(String koapHtml, ObligationArticle row, Subject subject) {
+        // 3) локатор: из текста КоАП вырезаем нужную статью по номеру+надстрочнику из записи
+        String articleHtml = koapArticleLocator.locateArticle(koapHtml, row.baseNumber(), row.superscript());
+        // 4) извлекатель: из статьи берём цитату штрафа для нужной части и субъекта
+        return koapPenaltyExtractor.penaltyFor(articleHtml, row.part(), subject.getKoapWording());   // отдаём цитату наружу
+    }
+
+    /**
      * По (группа, обязанность, субъект) отдаёт цитату штрафа: таблица → текст КоАП → статья → абзац субъекта.
      *
      * @param group      товарная группа ("одежда")
@@ -72,7 +96,7 @@ public class KoapRisk {
      * @throws IllegalStateException если пары нет в таблице; либо ниже по цепочке (текст не готов —
      *                               канарейка читалки, статья или абзац субъекта не найдены)
      */
-    public String riskFor(String group, String obligation, Subject subject) {
+    public String riskForObligation(String group, String obligation, Subject subject) {
         // 1) таблица: по паре (группа, обязанность) достаём запись — куда (статья+часть) смотреть
         ObligationArticle row = table.get(new ObligationKey(group, obligation));
         // пары в таблице нет → не наша обязанность / таблицу не пополнили; не пускаем null дальше
@@ -82,10 +106,51 @@ public class KoapRisk {
 
         // 2) читалка: весь текст КоАП (канарейка внутри — если редакция не готова, упадёт здесь)
         String koapHtml = pravoEbpiTextFetcher.fetchText(KOAP_HASH, KOAP_MARKER);
-        // 3) локатор: из текста КоАП вырезаем нужную статью по номеру+надстрочнику из записи
-        String articleHtml = koapArticleLocator.locateArticle(koapHtml, row.baseNumber(), row.superscript());
-        // 4) извлекатель: из статьи берём цитату штрафа для нужной части и субъекта
-        String koapPenalty = koapPenaltyExtractor.penaltyFor(articleHtml, row.part(), subject.getKoapWording());
-        return koapPenalty;   // отдаём цитату наружу
+
+        return penaltyFrom(koapHtml, row, subject);
+    }
+
+    /**
+     * Отдаёт риски по ВСЕМ обязанностям группы — то, что уходит в алерт.
+     *
+     * Обязанность здесь не вход, а РЕЗУЛЬТАТ: какие они у группы, мы узнаём из таблицы, а не от
+     * вызывающего. Поэтому ищем не через {@code get} (ему нужен полный ключ), а перебором значений —
+     * каждая запись сама несёт свою группу и обязанность.
+     *
+     * ⚠️ Текст КоАП берётся ОДИН РАЗ до цикла, а не на каждую обязанность: один вызов читалки —
+     * это два сетевых запроса и ~6.5 МБ. На двух обязанностях наивный путь стоил бы вдвое дороже.
+     * ⚠️ Порядок обязанностей = порядок записей в obligations.json (в загрузчике {@code LinkedHashMap}).
+     * Для одежды это «нанесение → ГИС МТ»: по ходу процесса, по порядку статей в КоАП и по тяжести
+     * (у нанесения ещё и конфискация).
+     * ⚠️ Чужая группа в цикле — НЕ ошибка, её молча пропускаем; ошибка — «перебрали всех и не нашли
+     * ни одной», и она проверяется ПОСЛЕ цикла.
+     *
+     * @param group   товарная группа товара, по которому сработал матч («одежда»)
+     * @param subject правовая форма клиента из профиля — от неё зависит, какой абзац штрафа цитировать
+     * @return по паре на каждую обязанность группы, в порядке obligations.json
+     * @throws IllegalStateException если у группы нет ни одной записи в таблице; либо ниже по цепочке
+     *                               (канарейка читалки, статья или абзац субъекта не найдены)
+     */
+    public List<ObligationRisk> risksForGroup(String group, Subject subject) {
+        // корзина под результат: наполняем в цикле
+        List<ObligationRisk> obligationRisks = new ArrayList<>();
+        // все записи таблицы (значения, не ключи): каждая знает свою группу и обязанность
+        Collection<ObligationArticle> obligations = table.values();
+        // текст КоАП — ОДИН раз на все обязанности группы (см. предупреждение выше)
+        String koapHtml = pravoEbpiTextFetcher.fetchText(KOAP_HASH, KOAP_MARKER);
+        for (ObligationArticle row : obligations) {
+            // не наша группа — просто идём дальше, это норма
+            if (row.group().equals(group)) {
+                // имя обязанности берём из самой записи, цитату считает общий помощник
+                obligationRisks.add(new ObligationRisk(row.obligation(), penaltyFrom(koapHtml, row, subject)));
+            }
+        }
+
+        // перебрали всё и ничего не набрали → группы нет в таблице; пустой список наружу = молчание
+        if (obligationRisks.isEmpty()) {
+            throw new IllegalStateException ("Не нашлось ни одной записи: " + group);
+        }
+
+        return obligationRisks;
     }
 }

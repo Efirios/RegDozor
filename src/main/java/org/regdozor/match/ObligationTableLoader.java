@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.regdozor.util.ResourceTextReader;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -42,8 +42,11 @@ public class ObligationTableLoader {
         try {
             // переводим строку json в массив записей: json-массив [ ] → ObligationArticle[]
             ObligationArticle[] rows = objectMapper.readValue(json, ObligationArticle[].class);
-            // заводим пустую карту-справочник: слева контракт Map, справа конкретная реализация HashMap
-            Map<ObligationKey, ObligationArticle> table = new HashMap<>();
+            // заводим пустую карту-справочник: слева контракт Map, справа конкретная реализация.
+            // ⚠️ ИМЕННО LinkedHashMap, а не HashMap: он помнит ПОРЯДОК ДОБАВЛЕНИЯ, а добавляем мы в
+            // порядке json. Значит порядок записей в obligations.json = порядок обязанностей в алерте
+            // (нанесение перед ГИС МТ). У HashMap порядка нет вовсе, и алерт выдавал бы их вразнобой.
+            Map<ObligationKey, ObligationArticle> table = new LinkedHashMap<>();
 
             // проходим по каждой записи массива
             for (ObligationArticle row : rows) {
