@@ -1,5 +1,6 @@
 package org.regdozor.report;
 
+import org.jsoup.nodes.Document;
 import org.regdozor.catalog.AlertFormatter;
 import org.regdozor.operator.ArticleTextFetcher;
 import org.regdozor.match.RelevanceStrategy;
@@ -60,7 +61,8 @@ public class DozorReporter {
      * @param documentUrl ссылка на документ (у нас — выпуск честныйзнак из ленты релизов)
      */
     public void run(String documentUrl) {
-        String text = articleTextFetcher.fetchCleanText(documentUrl);
+        Document doc = articleTextFetcher.fetchDocument(documentUrl);
+        String text = articleTextFetcher.extractText(doc);
         List<UserProduct> relevant = relevanceStrategy.findRelevant(text, profile.products());
 
         if (relevant.isEmpty()) return;
