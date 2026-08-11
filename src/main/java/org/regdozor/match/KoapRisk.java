@@ -134,21 +134,26 @@ public class KoapRisk {
     public List<ObligationRisk> risksForGroup(String group, Subject subject) {
         // корзина под результат: наполняем в цикле
         List<ObligationRisk> obligationRisks = new ArrayList<>();
+        List<ObligationArticle> articles = new ArrayList<>();
         // все записи таблицы (значения, не ключи): каждая знает свою группу и обязанность
         Collection<ObligationArticle> obligations = table.values();
-        // текст КоАП — ОДИН раз на все обязанности группы (см. предупреждение выше)
-        String koapHtml = pravoEbpiTextFetcher.fetchText(KOAP_HASH, KOAP_MARKER);
         for (ObligationArticle row : obligations) {
             // не наша группа — просто идём дальше, это норма
             if (row.group().equals(group)) {
-                // имя обязанности берём из самой записи, цитату считает общий помощник
-                obligationRisks.add(new ObligationRisk(row.obligation(), penaltyFrom(koapHtml, row, subject)));
+                articles.add(row);
             }
         }
 
         // перебрали всё и ничего не набрали → группы нет в таблице; пустой список наружу = молчание
-        if (obligationRisks.isEmpty()) {
+        if (articles.isEmpty()) {
             throw new IllegalStateException ("Не нашлось ни одной записи: " + group);
+        }
+
+        // текст КоАП — ОДИН раз на все обязанности группы (см. предупреждение выше)
+        String koapHtml = pravoEbpiTextFetcher.fetchText(KOAP_HASH, KOAP_MARKER);
+
+        for (ObligationArticle row : articles) {
+            obligationRisks.add(new ObligationRisk(row.obligation(), penaltyFrom(koapHtml, row, subject)));
         }
 
         return obligationRisks;
