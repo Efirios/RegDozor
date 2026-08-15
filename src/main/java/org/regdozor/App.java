@@ -11,8 +11,10 @@ import org.regdozor.pravo.MonitorRunner;
 import org.regdozor.pravo.Subscription;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.ProfileLoader;
+import org.regdozor.report.AlertStrategy;
 import org.regdozor.report.BaselineReporter;
 import org.regdozor.report.DozorReporter;
+import org.regdozor.report.ReleaseNotesAlertStrategy;
 import org.regdozor.store.OffsetStore;
 import org.regdozor.store.SeenStore;
 import org.regdozor.telegram.*;
@@ -103,9 +105,10 @@ public class App {
         Profile profile = new ProfileLoader().load();
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
         RelevanceStrategy codeStrategy = new RelevanceChecker(new CodeMatcher());
-        DozorReporter dozorReporter = new DozorReporter(profile, articleTextFetcher, relevanceStrategy, broadcaster);
+        AlertStrategy alertStrategy = new ReleaseNotesAlertStrategy();
+        DozorReporter dozorReporter = new DozorReporter(profile, articleTextFetcher, relevanceStrategy, broadcaster, alertStrategy);
         DozorReporter markirovkaDozor  = new DozorReporter(profile, markirovkaArticleTextFetcher, codeStrategy,
-                broadcaster);
+                broadcaster, alertStrategy);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
         MarkirovkaFeedMonitor markirovkaFeedMonitor = new MarkirovkaFeedMonitor(httpTextFetcher,
