@@ -8,18 +8,17 @@ import org.regdozor.operator.*;
 import org.regdozor.match.*;
 import org.regdozor.net.HttpTextFetcher;
 import org.regdozor.pravo.MonitorRunner;
+import org.regdozor.pravo.PravoEbpiTextFetcher;
 import org.regdozor.pravo.Subscription;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.ProfileLoader;
-import org.regdozor.report.AlertStrategy;
-import org.regdozor.report.BaselineReporter;
-import org.regdozor.report.DozorReporter;
-import org.regdozor.report.ReleaseNotesAlertStrategy;
+import org.regdozor.report.*;
 import org.regdozor.store.OffsetStore;
 import org.regdozor.store.SeenStore;
 import org.regdozor.telegram.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -106,16 +105,26 @@ public class App {
         RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
         RelevanceStrategy codeStrategy = new RelevanceChecker(new CodeMatcher());
         AlertStrategy alertStrategy = new ReleaseNotesAlertStrategy();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ObligationTableLoader obligationTableLoader = new ObligationTableLoader();
+        Map<ObligationKey, ObligationArticle> table = obligationTableLoader.load();
+        PravoEbpiTextFetcher pravoEbpiTextFetcher = new PravoEbpiTextFetcher(httpTextFetcher,objectMapper);
+        KoapArticleLocator koapArticleLocator = new KoapArticleLocator();
+        KoapPenaltyExtractor koapPenaltyExtractor = new KoapPenaltyExtractor();
+        KoapRisk koapRisk = new KoapRisk(table, pravoEbpiTextFetcher, koapArticleLocator, koapPenaltyExtractor);
+        MarkirovkaStagesExtractor markirovkaStagesExtractor = new MarkirovkaStagesExtractor();
+        AlertBuilder alertBuilder = new AlertBuilder();
+        MarkirovkaAlertStrategy markirovkaAlertStrategy = new MarkirovkaAlertStrategy(markirovkaStagesExtractor,
+                koapRisk, alertBuilder, profile);
         DozorReporter dozorReporter = new DozorReporter(profile, articleTextFetcher, relevanceStrategy, broadcaster, alertStrategy);
         DozorReporter markirovkaDozor  = new DozorReporter(profile, markirovkaArticleTextFetcher, codeStrategy,
-                broadcaster, alertStrategy);
+                broadcaster, markirovkaAlertStrategy);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
         MarkirovkaFeedMonitor markirovkaFeedMonitor = new MarkirovkaFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-markirovka.txt"), markirovkaDozor, profile);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         TelegramReceiver telegramReceiver = new TelegramReceiver(token, objectMapper);
         OffsetStore offsetStore = new OffsetStore("tg-offset.txt");
         SeenStore welcomedStore = new SeenStore("welcomed.txt");
