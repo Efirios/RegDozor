@@ -11,6 +11,9 @@ dependency-reduced-pom.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+# Хранит ИМЯ зарегистрированного SDK ("openjdk-21"/"openjdk-26") — оно своё на каждой машине.
+# Из-за этого файл вечно болтался в изменениях и однажды случайно уехал в чужой коммит.
+.idea/misc.xml
 *.iws
 *.iml
 *.ipr
