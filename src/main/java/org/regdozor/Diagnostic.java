@@ -1,20 +1,13 @@
 package org.regdozor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
+import org.regdozor.match.*;
+import org.regdozor.net.HttpTextFetcher;
+import org.regdozor.pravo.PravoEbpiTextFetcher;
+import org.regdozor.profile.Subject;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpRequest;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 
 /**
  * ВРЕМЕННЫЙ отладочный класс — НЕ часть продукта. Его нигде не зовут; он живёт как «песочница»
@@ -89,31 +82,72 @@ public class Diagnostic {
 //            System.out.println(relevant + " ← " + url);
 //        }
 
-        String botToken = System.getenv("TG_BOT_TOKEN");
-        if (botToken == null || botToken.isBlank()){
-            throw new IllegalStateException("не задана переменная окружения TG_BOT_TOKEN");
-        }
+//        String botToken = System.getenv("TG_BOT_TOKEN");
+//        if (botToken == null || botToken.isBlank()){
+//            throw new IllegalStateException("не задана переменная окружения TG_BOT_TOKEN");
+//        }
+//
+//        String url = "https://api.telegram.org/bot" + botToken + "/getUpdates";
+//
+//        String response  = new HttpTextFetcher().fetch(url);
+//
+////        System.out.println(response);
+//
+//        ObjectMapper mapper = new ObjectMapper();
+//        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//        try {
+//            GetUpdatesResponse resp = mapper.readValue(response, GetUpdatesResponse.class);
+//
+//            for (Update update : resp.result()) {
+//                if (update.message() != null) {
+//                    System.out.println(update.message().chat().id());
+//                    System.out.println(update.update_id());
+//                }
+//            }
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException(e);
+//        }
 
-        String url = "https://api.telegram.org/bot" + botToken + "/getUpdates";
+//        HttpTextFetcher httpTextFetcher = new HttpTextFetcher();
+//        ObjectMapper mapper = new ObjectMapper();
+//        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//        PravoEbpiTextFetcher pravoEbpiTextFetcher = new PravoEbpiTextFetcher(httpTextFetcher, mapper);
+//
+//        String hash = "6639c6c6580e8aa0bdf84170d25823669dfb6a4144b03da245ef4889f24765c0";
+//        String koap = pravoEbpiTextFetcher.fetchText(hash, "административных правонарушениях");
+//
+//        KoapArticleLocator koapArticleLocator = new KoapArticleLocator();
+//
+//        String article = koapArticleLocator.locateArticle(koap, "15.12", 0);
+//
+//        KoapPenaltyExtractor koapPenaltyExtractor = new KoapPenaltyExtractor();
+//        String penalty = koapPenaltyExtractor.penaltyFor(article, "1", "на должностных лиц");
+//        System.out.println("ШТРАФ: " + penalty);
 
-        String response  = new HttpTextFetcher().fetch(url);
 
-//        System.out.println(response);
-
+        ObligationTableLoader obligationTableLoader = new ObligationTableLoader();
+        Map<ObligationKey, ObligationArticle> table = obligationTableLoader.load();
+        HttpTextFetcher httpTextFetcher = new HttpTextFetcher();
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        try {
-            GetUpdatesResponse resp = mapper.readValue(response, GetUpdatesResponse.class);
+        KoapArticleLocator koapArticleLocator = new KoapArticleLocator();
+        KoapPenaltyExtractor koapPenaltyExtractor = new KoapPenaltyExtractor();
+        PravoEbpiTextFetcher pravoEbpiTextFetcher = new PravoEbpiTextFetcher(httpTextFetcher, mapper);
+        KoapRisk koapRisk = new KoapRisk(table, pravoEbpiTextFetcher, koapArticleLocator, koapPenaltyExtractor);
+        String penalty1 = koapRisk.riskForObligation("одежда", "нанесение", Subject.IP);
+        String penalty2 = koapRisk.riskForObligation("одежда", "ГИС МТ", Subject.IP);
+        String penalty3 = koapRisk.riskForObligation("одежда", "нанесение", Subject.LEGAL);
+        System.out.println("\uD83D\uDCB8Риск: " + penalty1);
+        System.out.println("\uD83D\uDCB8Риск: " + penalty2);
+        System.out.println("\uD83D\uDCB8Риск: " + penalty3);
 
-            for (Update update : resp.result()) {
-                if (update.message() != null) {
-                    System.out.println(update.message().chat().id());
-                    System.out.println(update.update_id());
-                }
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+
+//        ObligationTableLoader obligationTableLoader = new ObligationTableLoader();
+//        Map<ObligationKey, ObligationArticle> map = obligationTableLoader.load();
+//        ObligationArticle found1 = map.get(new ObligationKey("одежда", "нанесение"));
+//        System.out.println(found1);
+//        ObligationArticle found2 = map.get(new ObligationKey("одежда", "ГИС МТ"));
+//        System.out.println(found2);
 
     }
 }

@@ -7,11 +7,23 @@ package org.regdozor.match;
  * только координаты: {@code baseNumber}+{@code superscript} ведут в {@link KoapArticleLocator},
  * {@code part} — в будущий шаг цитирования нужного абзаца.
  *
- * @param group       товарная группа/домен ("одежда") — часть ключа поиска
- * @param obligation  обязанность ("нанесение" / "ГИС МТ") — часть ключа поиска
- * @param baseNumber  базовый номер статьи ("15.12") → в локатор
- * @param superscript надстрочник (0 — нет, 1 — ¹, 2 — ²) → в локатор
- * @param part        номер части статьи ("1"); {@code null}, если статья без деления на части (напр. 15.12¹)
+ * ⚠️ ДВЕ «речи», как у {@link org.regdozor.profile.Subject}: {@code obligation} — машинный КЛЮЧ,
+ * {@code violationLabel} — то, что видит человек. Разведены нарочно: формулировки правятся часто,
+ * а ключ меняться не должен — иначе правка текста молча ломает поиск по таблице.
+ *
+ * @param group          товарная группа/домен ("одежда") — часть ключа поиска
+ * @param obligation     обязанность ("нанесение" / "ГИС МТ") — часть ключа поиска. ВНУТРЕННЕЕ имя,
+ *                       клиенту не показывается
+ * @param baseNumber     базовый номер статьи ("15.12") → в локатор
+ * @param superscript    надстрочник (0 — нет, 1 — ¹, 2 — ²) → в локатор
+ * @param part           номер части статьи ("1"); {@code null}, если статья без деления на части (напр. 15.12¹)
+ * @param violationLabel подпись НАРУШЕНИЯ для алерта («Товар без маркировки»). Называет отсутствие
+ *                       действия, а не саму обязанность: закон карает за «производство без маркировки»
+ *                       и за «непредставление сведений», и подпись обязана этому соответствовать —
+ *                       иначе под заголовком «чем грозит нарушение» получалось «нарушение за нанесение».
+ *                       ⚠️ Имя поля в obligations.json должно совпадать ТОЧЬ-В-ТОЧЬ: при опечатке Jackson
+ *                       (с {@code FAIL_ON_UNKNOWN_PROPERTIES=false}) молча оставит null, и в алерт уедет «null: влечет…»
  */
-public record ObligationArticle(String group, String obligation, String baseNumber, int superscript, String part) {
+public record ObligationArticle(String group, String obligation, String baseNumber, int superscript, String part,
+                                String violationLabel) {
 }
