@@ -4,13 +4,15 @@
     "obligation": "нанесение",
     "baseNumber": "15.12",
     "superscript": 0,
-    "part": "1"
+    "part": "1",
+    "violationLabel": "Товар без маркировки"
   },
   {
     "group": "одежда",
     "obligation": "ГИС МТ",
     "baseNumber": "15.12",
     "superscript": 1,
-    "part": null
+    "part": null,
+    "violationLabel": "Сведения не поданы в ГИС МТ"
   }
 ]

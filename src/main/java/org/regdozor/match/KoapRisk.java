@@ -153,7 +153,7 @@ public class KoapRisk {
         String koapHtml = pravoEbpiTextFetcher.fetchText(KOAP_HASH, KOAP_MARKER);
 
         for (ObligationArticle row : articles) {
-            obligationRisks.add(new ObligationRisk(row.obligation(), penaltyFrom(koapHtml, row, subject)));
+            obligationRisks.add(new ObligationRisk(row.violationLabel(), penaltyFrom(koapHtml, row, subject)));
         }
 
         return obligationRisks;
