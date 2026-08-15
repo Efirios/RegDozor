@@ -21,13 +21,33 @@ import java.util.List;
  * ⚠️ Свой {@code DISCLAIMER}, а не {@code catalog.AlertFormatter.DISCLAIMER}: каталог идёт под снос,
  * и боевой путь не должен от него зависеть — иначе снос потащит за собой алерт.
  *
- * Текст чужих строк (цитаты КоАП, этапы) вставляется КАК ЕСТЬ, без экранирования — решено осознанно:
- * в источниках таких символов нет. Если однажды появятся, Telegram отвергнет сообщение и напишет об
- * этом в лог — искать вслепую не придётся.
+ * ⚠️ ЧУЖОЙ ТЕКСТ ЭКРАНИРУЕТСЯ. Шлём {@code parse_mode=HTML}, а в сообщение идут строки из чужих рук:
+ * цитаты КоАП, этапы с markirovka, имена товаров из profile.json, адрес статьи. Попадись там
+ * {@code <}, {@code >} или {@code &} — Telegram отверг бы СООБЩЕНИЕ ЦЕЛИКОМ, и клиент не увидел бы
+ * ничего. Поэтому каждый чужой кусок проходит через экранировщик, а наши литералы разметки
+ * ({@code <b>}, {@code <u>}) — нет: они и должны остаться тегами.
  */
 public class AlertBuilder {
     // дисклеймер: бот не юрист, решения клиент принимает сам, сверяясь с первоисточником
     public static final String DISCLAIMER = "Не является юридической консультацией. Сверяйтесь с первоисточником.";
+
+    /**
+     * Обезвреживает чужой текст для HTML-режима Telegram: три символа, которые тот примет за разметку.
+     *
+     * 🔴 ПОРЯДОК ЗАМЕН ВАЖЕН: {@code &} идёт ПЕРВЫМ. Иначе амперсанд, который мы сами породили внутри
+     * {@code &lt;}, попадёт под замену {@code &} и превратится в {@code &amp;lt;} — клиент увидит
+     * буквально «&lt;» вместо «<». Общее правило: замена, ПОРОЖДАЮЩАЯ символ, который ловит другая
+     * замена, выполняется раньше.
+     *
+     * {@code replace} (не {@code replaceAll}) — ищет буквально, а не по регулярному выражению.
+     * Строки неизменяемы, поэтому замены сцеплены в цепочку: каждая отдаёт новую строку следующей.
+     *
+     * Проверено злым примером: «Майка &lt;b&gt;&amp;&lt;/b&gt; шорты» уехало текстом, а не разметкой,
+     * и амперсанд экранировался ОДИН раз.
+     */
+    private static String replace(String r) {
+        return r.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
 
     /**
      * Собирает готовый текст сообщения для Telegram (разметка HTML).
@@ -49,7 +69,8 @@ public class AlertBuilder {
 
         // цикл ТОЛЬКО собирает имена; склейка — одна операция над готовым списком, поэтому она ниже
         for (UserProduct p : userProducts) {
-            names.add(p.productName());
+            String screen = replace(p.productName());
+            names.add(screen);
         }
         // join ставит разделитель МЕЖДУ элементами — хвостовой запятой не будет
         String line = String.join(", ", names);
@@ -60,7 +81,8 @@ public class AlertBuilder {
         // Здесь цикл, а не join: хвостовой перевод строки безвреден, в отличие от хвостовой запятой
         sb.append("📅 Что меняется (ЦРПТ пишет):\n");
         for (String stage : stages) {
-            sb.append("• ").append(stage).append("\n");
+            String screen = replace(stage);
+            sb.append("• ").append(screen).append("\n");
         }
 
         // блок «чем грозит»: субъект назван прямо — суммы у ИП и юрлица различаются в разы
@@ -68,11 +90,14 @@ public class AlertBuilder {
         for (ObligationRisk o : obligationRisks) {
             // title — подпись НАРУШЕНИЯ («Товар без маркировки»), не обязанности: иначе вышло бы
             // «нарушение за нанесение». Цитата идёт ЦЕЛИКОМ — обрезка исказила бы текст закона
-            sb.append("• ").append(o.title()).append(": ").append(o.quote()).append("\n");
+            String screenTitle = replace(o.title());
+            String screenQuote = replace(o.quote());
+            sb.append("• ").append(screenTitle).append(": ").append(screenQuote).append("\n");
         }
 
         // ссылка голым адресом: Telegram сам сделает её кликабельной, а клиент видит, куда идёт
-        sb.append("\n📄 Первоисточник: ").append(url).append("\n");
+        String screenUrl = replace(url);
+        sb.append("\n📄 Первоисточник: ").append(screenUrl).append("\n");
         sb.append(DISCLAIMER);
 
         return sb.toString();
