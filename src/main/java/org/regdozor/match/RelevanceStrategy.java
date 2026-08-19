@@ -1,5 +1,6 @@
 package org.regdozor.match;
 
+import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
 
 import java.util.List;
@@ -20,5 +21,5 @@ public interface RelevanceStrategy {
      * @param userProducts товары пользователя из профиля (имя + ТН ВЭД + ОКПД2)
      * @return товары, затронутые документом (пустой список, если никого)
      */
-    List<UserProduct> findRelevant(String text, List<UserProduct> userProducts);
+    List<UserProduct> findRelevant(String text, Profile profile);
 }

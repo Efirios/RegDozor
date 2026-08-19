@@ -1,6 +1,8 @@
 package org.regdozor.report;
 
 import org.jsoup.nodes.Document;
+import org.regdozor.match.RiskMemo;
+import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
 
 import java.util.List;
@@ -31,7 +33,11 @@ public interface AlertStrategy {
      *                     простой реализации не нужна, и она её игнорирует
      * @param documentUrl  ссылка на документ — уходит в сообщение первоисточником
      * @param userProducts что вернул матч. ⚠️ Смысл зависит от стратегии релевантности (см. выше)
-     * @return готовый текст сообщения для {@code Broadcaster}
+     * @param riskMemo     памятка на ОДИН прогон дозора ({@link RiskMemo}). Дозор идёт циклом по
+     *                     подписчикам, и каждый спрашивает риски по своей группе и форме; памятка
+     *                     общая на всех, поэтому текст КоАП (~6.5 МБ) читается один раз на пару
+     *                     «группа + субъект», а не по разу на человека. Простой реализации не нужна
+     * @return готовый текст сообщения для рассылки
      */
-    String composeAlert(Document doc, String documentUrl, List<UserProduct> userProducts);
+    String composeAlert(Document doc, String documentUrl, Profile profile, List<UserProduct> userProducts, RiskMemo riskMemo);
 }

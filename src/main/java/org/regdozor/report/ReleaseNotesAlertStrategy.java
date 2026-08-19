@@ -1,6 +1,8 @@
 package org.regdozor.report;
 
 import org.jsoup.nodes.Document;
+import org.regdozor.match.RiskMemo;
+import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
 
 import java.util.List;
@@ -16,12 +18,14 @@ import java.util.List;
  * честныйзнака нет), процитировать санкцию нельзя (мы приписали бы ответственность непрочитанному
  * тексту). Поэтому сообщение честно говорит только то, что нам известно, и отправляет к источнику.
  *
- * Параметры {@code doc} и {@code userProducts} не используются — они есть ради общего контракта.
+ * Параметры {@code doc}, {@code userProducts} и {@code riskMemo} не используются — они есть ради
+ * общего контракта: риски тут не цитируются в принципе (см. выше), а разметку страницы читать незачем.
  * Класс без полей и состояния: одного экземпляра хватает на всё приложение.
  */
 public class ReleaseNotesAlertStrategy implements AlertStrategy {
     @Override
-    public String composeAlert(Document doc, String documentUrl, List<UserProduct> userProducts) {
+    public String composeAlert(Document doc, String documentUrl, Profile profile, List<UserProduct> userProducts,
+                               RiskMemo riskMemo) {
         StringBuilder sb = new StringBuilder();
         sb.append("🔔 <b>ЦРПТ опубликовал новый релиз по твоей товарной группе</b>\n");
         sb.append("Что именно изменилось — смотри первоисточник.\n\n");

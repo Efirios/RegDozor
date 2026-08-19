@@ -1,5 +1,6 @@
 package org.regdozor.match;
 
+import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
 
 import java.util.ArrayList;
@@ -29,10 +30,10 @@ public class RelevanceChecker implements RelevanceStrategy{
      * различает их только второй код, ОКПД2.
      */
     @Override
-    public List<UserProduct> findRelevant(String text, List<UserProduct> userProducts) {
+    public List<UserProduct> findRelevant(String text, Profile profile) {
         List<UserProduct> relevant = new ArrayList<>();
 
-        for (UserProduct p : userProducts) {
+        for (UserProduct p : profile.products()) {
             // Собираем коды товара, по которым будем искать: ТН ВЭД обязательно, ОКПД2 — если задан.
             List<String> codes = new ArrayList<>();
 
