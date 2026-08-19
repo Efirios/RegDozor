@@ -1,6 +1,5 @@
 package org.regdozor.match;
 
-import org.regdozor.catalog.Product;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
 
@@ -17,25 +16,18 @@ import java.util.List;
 public class GroupRelevanceStrategy implements RelevanceStrategy{
     /** Матчер «текст относится к группе?» (нормализация регистра/ё, правило «любой термин»). */
     private final GroupMatcher groupMatcher;
-    /** Профиль пользователя с терминами его группы. Значение, не «загрузчик». */
-    private final Profile profile;
 
-    public GroupRelevanceStrategy(GroupMatcher groupMatcher, Profile profile) {
+    public GroupRelevanceStrategy(GroupMatcher groupMatcher) {
         if (groupMatcher == null) {
             throw new IllegalArgumentException("groupMatcher не может быть null!");
         }
         this.groupMatcher = groupMatcher;
-
-        if (profile == null) {
-            throw new IllegalArgumentException("profile не может быть null!");
-        }
-        this.profile = profile;
     }
 
     @Override
-    public List<UserProduct> findRelevant(String text, List<UserProduct> userProducts) {
+    public List<UserProduct> findRelevant(String text, Profile profile) {
         if (groupMatcher.concernsGroup(text, profile)) {
-            return userProducts;
+            return profile.products();
         }
         return List.of();
     }

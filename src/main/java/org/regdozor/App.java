@@ -12,6 +12,7 @@ import org.regdozor.pravo.PravoEbpiTextFetcher;
 import org.regdozor.pravo.Subscription;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.ProfileLoader;
+import org.regdozor.profile.ProfileStore;
 import org.regdozor.report.*;
 import org.regdozor.store.OffsetStore;
 import org.regdozor.store.SeenStore;
@@ -102,11 +103,12 @@ public class App {
         ArticleTextFetcher markirovkaArticleTextFetcher = new ArticleTextFetcher(httpTextFetcher, markirovkaArticleExtractor);
         GroupMatcher groupMatcher = new GroupMatcher();
         Profile profile = new ProfileLoader().load();
-        RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher, profile);
+        RelevanceStrategy relevanceStrategy = new GroupRelevanceStrategy(groupMatcher);
         RelevanceStrategy codeStrategy = new RelevanceChecker(new CodeMatcher());
         AlertStrategy alertStrategy = new ReleaseNotesAlertStrategy();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ProfileStore profileStore = new ProfileStore(objectMapper);
         ObligationTableLoader obligationTableLoader = new ObligationTableLoader();
         Map<ObligationKey, ObligationArticle> table = obligationTableLoader.load();
         PravoEbpiTextFetcher pravoEbpiTextFetcher = new PravoEbpiTextFetcher(httpTextFetcher,objectMapper);
@@ -116,10 +118,11 @@ public class App {
         MarkirovkaStagesExtractor markirovkaStagesExtractor = new MarkirovkaStagesExtractor();
         AlertBuilder alertBuilder = new AlertBuilder();
         MarkirovkaAlertStrategy markirovkaAlertStrategy = new MarkirovkaAlertStrategy(markirovkaStagesExtractor,
-                koapRisk, alertBuilder, profile);
-        DozorReporter dozorReporter = new DozorReporter(profile, articleTextFetcher, relevanceStrategy, broadcaster, alertStrategy);
-        DozorReporter markirovkaDozor  = new DozorReporter(profile, markirovkaArticleTextFetcher, codeStrategy,
-                broadcaster, markirovkaAlertStrategy);
+                alertBuilder);
+        DozorReporter dozorReporter = new DozorReporter(articleTextFetcher, relevanceStrategy, telegramNotifier,
+                alertStrategy, seenStore, profileStore, koapRisk);
+        DozorReporter markirovkaDozor  = new DozorReporter(markirovkaArticleTextFetcher, codeStrategy, telegramNotifier,
+                alertStrategy, seenStore, profileStore, koapRisk);
         CrptFeedMonitor crptFeedMonitor = new CrptFeedMonitor(httpTextFetcher,
                 new SeenStore("seen-releases.txt"), dozorReporter);
         MarkirovkaFeedMonitor markirovkaFeedMonitor = new MarkirovkaFeedMonitor(httpTextFetcher,

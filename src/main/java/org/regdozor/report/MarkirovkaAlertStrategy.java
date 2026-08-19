@@ -1,8 +1,8 @@
 package org.regdozor.report;
 
 import org.jsoup.nodes.Document;
-import org.regdozor.match.KoapRisk;
 import org.regdozor.match.ObligationRisk;
+import org.regdozor.match.RiskMemo;
 import org.regdozor.operator.MarkirovkaStagesExtractor;
 import org.regdozor.profile.Profile;
 import org.regdozor.profile.UserProduct;
@@ -20,9 +20,14 @@ import java.util.List;
  *       с текстом статьи, и совпавшие приехали в {@code userProducts};</li>
  *   <li><b>«что меняется и когда»</b> — {@link MarkirovkaStagesExtractor} по {@code doc}: календарь
  *       дословно, первый этап несёт дату старта. Цитируем, а не пересказываем;</li>
- *   <li><b>«чем грозит»</b> — {@link KoapRisk} по ГРУППЕ товара: обязанности берутся от группы через
+ *   <li><b>«чем грозит»</b> — {@link RiskMemo} по ГРУППЕ товара: обязанности берутся от группы через
  *       выверенную таблицу, а не выводятся из текста статьи (статья не называет их нашими словами).</li>
  * </ul>
+ *
+ * ⚠️ Риски спрашиваются у ПАМЯТКИ, а не у {@code KoapRisk} напрямую, и своего экземпляра калькулятора
+ * этот класс не держит. Причина: дозор идёт циклом по подписчикам, стратегию зовут по одному человеку
+ * за раз, и она не знает, кто спросит после неё. Памятка общая на весь прогон — она и не даёт прочитать
+ * текст КоАП дважды ради одинакового ответа.
  *
  * ⚠️ ГРУППА БЕРЁТСЯ У ПЕРВОГО совпавшего товара — сознательное упрощение под НЫНЕШНЕЕ устройство
  * сообщения: у {@link AlertBuilder} один блок «чем грозит» на весь алерт, без разбивки по группам.
@@ -36,35 +41,22 @@ import java.util.List;
  */
 public class MarkirovkaAlertStrategy implements AlertStrategy {
     private final MarkirovkaStagesExtractor markirovkaStagesExtractor;
-    private final KoapRisk koapRisk;
     private final AlertBuilder alertBuilder;
-    private final Profile profile;
 
-    public MarkirovkaAlertStrategy(MarkirovkaStagesExtractor markirovkaStagesExtractor, KoapRisk koapRisk,
-                                   AlertBuilder alertBuilder, Profile profile) {
+    public MarkirovkaAlertStrategy(MarkirovkaStagesExtractor markirovkaStagesExtractor, AlertBuilder alertBuilder) {
         if (markirovkaStagesExtractor == null) {
             throw new IllegalArgumentException("markirovkaStagesExtractor не может быть null!");
         }
         this.markirovkaStagesExtractor = markirovkaStagesExtractor;
 
-        if (koapRisk == null) {
-            throw new IllegalArgumentException("koapRisk не может быть null!");
-        }
-        this.koapRisk = koapRisk;
-
         if (alertBuilder == null) {
             throw new IllegalArgumentException("alertBuilder не может быть null!");
         }
         this.alertBuilder = alertBuilder;
-
-        if (profile == null) {
-            throw new IllegalArgumentException("profile не может быть null!");
-        }
-        this.profile = profile;
     }
 
     @Override
-    public String composeAlert(Document doc, String documentUrl, List<UserProduct> userProducts) {
+    public String composeAlert(Document doc, String documentUrl, Profile profile, List<UserProduct> userProducts, RiskMemo riskMemo) {
         // этапы читаем по ТОМУ ЖЕ Document, что использовал матч — второго запроса к сайту не будет,
         // и календарь гарантированно из той же версии страницы, что и совпадение по кодам
         List<String> stages = markirovkaStagesExtractor.extractStages(doc);
@@ -72,7 +64,7 @@ public class MarkirovkaAlertStrategy implements AlertStrategy {
         UserProduct userProduct = userProducts.getFirst();
         String group = userProduct.group();
         // по группе — все её обязанности сразу; текст КоАП внутри читается ОДИН раз на обе
-        List<ObligationRisk> obligationRisks = koapRisk.risksForGroup(group, profile.subject());
+        List<ObligationRisk> obligationRisks = riskMemo.risksFor(group, profile.subject());
         // субъект уходит дважды и по разным поводам: в риски — чтобы выбрать абзац санкции
         // («на должностных лиц»), в сборщик — чтобы назвать его человеку («для ИП»)
         return alertBuilder.glueMessage(userProducts, stages, obligationRisks, profile.subject(), documentUrl);
