@@ -32,7 +32,7 @@ public class AlertFormatter {
         // Эмодзи записаны escape-последовательностями (🔔 и т.п.) — Java хранит их двумя символами.
         // productNames().get(0) — берём первое (основное) имя товара из списка синонимов.
 
-        sb.append("\uD83D\uDD14 <u><b>").append(p.productNames().get(0)).append("</b></u>").append(" (ТН ВЭД: ").append(p.code()).append(",").
+        sb.append("\uD83D\uDD14 <u><b>").append(p.productNames().get(0)).append("</b></u>").append(" (ТН ВЭД: ").append(p.tnved()).append(",").
                 append(" ОКПД2: ").append(p.okpd2()).append(")").append("\n");
 
         // СТАТУС — три ветки, и null проверяется ПЕРВЫМ. Это не стиль, а необходимость:
