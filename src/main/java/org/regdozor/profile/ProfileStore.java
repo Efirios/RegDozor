@@ -35,7 +35,7 @@ public class ProfileStore {
 
     public ProfileStore(ObjectMapper mapper) {
         if (mapper == null) {
-            throw new IllegalArgumentException("mapper cannot be null");
+            throw new IllegalArgumentException("mapper не может быть null");
         }
         this.mapper = mapper;
     }
