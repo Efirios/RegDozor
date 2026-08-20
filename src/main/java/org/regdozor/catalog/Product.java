@@ -10,7 +10,7 @@ import java.util.List;
  * record = неизменяемые данные: Java сама делает конструктор и геттеры (code(), okpd2()…),
  * а Jackson (см. ProductLoader) заполняет поля из JSON по совпадению имён.
  *
- * @param code            код ТН ВЭД (напр. "6109"). Иерархичен: 4/6/10 знаков, глубина важна
+ * @param tnved            код ТН ВЭД (напр. "6109"). Иерархичен: 4/6/10 знаков, глубина важна
  * @param okpd2           код ОКПД2 (напр. "14.14.30"); вместе с ТН ВЭД снимает неоднозначность 4-значного кода. Может быть null
  * @param officialName    официальное название позиции из перечня (для человека)
  * @param productNames    как товар называет сам клиент ("Майка женская") — список, т.к. синонимов может быть много
@@ -21,7 +21,7 @@ import java.util.List;
  * @param codeSource      откуда взят код (декларация/сертификат клиента) — для прослеживаемости
  * @param verifiedOn      дата, когда коды и сроки сверили с первоисточником
  */
-public record Product(String code, String okpd2, String officialName, List<String> productNames, String category,
+public record Product(String tnved, String okpd2, String officialName, List<String> productNames, String category,
                       Boolean markingRequired, List<Obligation> obligations, String codeSource,
                       String verifiedOn) {
 }
