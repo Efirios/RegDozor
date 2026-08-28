@@ -30,25 +30,57 @@ public class ProfileStore {
     // «переводчик» json ↔ объекты. Внедряется, а не создаётся здесь: в App он уже настроен
     // (FAIL_ON_UNKNOWN_PROPERTIES=false), и второй экземпляр со своими настройками однажды разойдётся с первым
     private final ObjectMapper mapper;
-    // каталог профилей — написан ОДИН раз на весь класс, чтобы чтение и запись не разъехались по опечатке
-    private static final Path PROFILES_DIR = Path.of("data", "profiles");
+    // каталог профилей — ПОЛЕ, а не константа: класс не должен сам решать, куда пишет.
+    // Хранится в одном месте, чтобы чтение и запись не разъехались по опечатке
+    private final Path profilesDir;
 
-    public ProfileStore(ObjectMapper mapper) {
+    /**
+     * Основной конструктор: каталог задаётся снаружи.
+     *
+     * ⚠️ Каталог стал ПАРАМЕТРОМ ради ПРОВЕРЯЕМОСТИ. Пока он был зашит константой {@code data/profiles},
+     * тест на сохранение писал бы в настоящий каталог рядом с профилями клиента, а тест на удаление
+     * стирал бы живой файл — подсунуть временную папку было некуда. Класс, который сам решает, откуда
+     * берёт данные и куда пишет, снаружи не проверить: в конструкции нет шва.
+     *
+     * Заодно это возвращает класс к принципу, по которому построен весь проект: помощников и настройки
+     * создают СНАРУЖИ и передают сюда. Каталог — такая же зависимость, просто настроечная.
+     */
+    public ProfileStore(ObjectMapper mapper, Path profilesDir) {
         if (mapper == null) {
             throw new IllegalArgumentException("mapper не может быть null");
         }
         this.mapper = mapper;
+
+        if (profilesDir == null) {
+            throw new IllegalArgumentException("profilesDir не может быть null");
+        }
+        this.profilesDir = profilesDir;
+    }
+
+    /**
+     * Боевой конструктор: каталог по умолчанию — {@code data/profiles}, рядом с остальным состоянием.
+     *
+     * ⚠️ Одна строка — делегирование в основной конструктор через {@code this(...)}. Проверки и
+     * присваивания НЕ повторяются: они живут в одном месте, и добавление нового поля потребует правки
+     * только основного. Повторить их здесь и нельзя — поля {@code final}, а такое поле присваивается
+     * ровно один раз.
+     *
+     * Это НЕ «конструктор ради тестов»: короткий задаёт разумное умолчание для боя, длинный позволяет
+     * его переопределить — тесту, а завтра, например, настройке из файла.
+     */
+    public ProfileStore(ObjectMapper mapper) {
+        this(mapper, Path.of("data", "profiles"));
     }
 
     /**
      * Составляет адрес файла внутри каталога профилей.
      *
-     * ⚠️ Через {@code resolve}, а НЕ склейкой строк: {@code PROFILES_DIR + fileName} дало бы
+     * ⚠️ Через {@code resolve}, а НЕ склейкой строк: {@code profilesDir + fileName} дало бы
      * {@code data\profiles123456789.json} — без разделителя, то есть файл лёг бы не туда.
      * {@code resolve} ставит разделитель нужной операционной системы сам.
      */
     private Path getFilePath(String fileName) {
-        return PROFILES_DIR.resolve(fileName);
+        return profilesDir.resolve(fileName);
     }
 
     /**
@@ -113,7 +145,7 @@ public class ProfileStore {
 
         try {
             // каталог может не существовать при самом первом сохранении; существующий метод молча пропустит
-            Files.createDirectories(PROFILES_DIR);
+            Files.createDirectories(profilesDir);
             // пишем ЧЕРНОВИК: пока идёт запись, рабочий профиль на месте и цел
             Files.writeString(pathTmp, mapper.writeValueAsString(profile), StandardCharsets.UTF_8);
             // и только теперь одним неделимым движением подменяем рабочий файл черновиком
