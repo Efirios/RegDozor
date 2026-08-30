@@ -22,8 +22,19 @@ public class SeenStore {
     private final Path filePath;
 
     /** @param fileName имя файла внутри папки data/ (напр. "seen-releases.txt") */
+    public SeenStore(String fileName, Path dataDir) {
+        if (fileName == null) {
+            throw new IllegalArgumentException("fileName не может быть null");
+        }
+
+        if (dataDir == null) {
+            throw new IllegalArgumentException("dataDir не может быть null");
+        }
+        this.filePath = dataDir.resolve(fileName);
+    }
+
     public SeenStore(String fileName) {
-        filePath = Path.of("data", fileName);
+        this(fileName, Path.of("data"));
     }
 
     /**
